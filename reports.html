@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports & Analytics | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062'}}}}</script>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Reports & Analytics</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Business intelligence at a glance</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-download-gstr" class="btn btn-dark btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download GSTR-1
+      </button>
+      <button id="btn-export-excel" class="btn btn-primary btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Report Filters Bar -->
+  <div class="card mb-5">
+    <div class="card-body" style="padding:14px 20px">
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="form-group" style="margin:0">
+          <select id="report-type" class="form-select" style="min-width:180px">
+            <option value="sales">Sales Report</option>
+            <option value="inventory">Inventory Report</option>
+            <option value="gst">GST Summary</option>
+            <option value="pl">Profit & Loss</option>
+            <option value="price">Price History</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold" style="color:#059100">From:</label>
+          <input type="date" id="report-from" class="form-input" style="width:145px"/>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold" style="color:#059100">To:</label>
+          <input type="date" id="report-to" class="form-input" style="width:145px"/>
+        </div>
+        <button id="btn-run-report" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Report
+        </button>
+        <!-- Quick ranges -->
+        <div class="flex gap-1">
+          <button class="btn btn-outline btn-sm range-btn" data-days="7">7D</button>
+          <button class="btn btn-outline btn-sm range-btn" data-days="30">30D</button>
+          <button class="btn btn-outline btn-sm range-btn" data-days="90">90D</button>
+          <button class="btn btn-outline btn-sm range-btn" data-days="365">1Y</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Summary Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5" id="report-kpis">
+    <div class="metric-card" style="border-left-color:#059100">
+      <p class="metric-label">Total Revenue</p>
+      <p class="metric-value" id="kpi-revenue">₹0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#005900">
+      <p class="metric-label">Total Orders</p>
+      <p class="metric-value" style="color:#005900" id="kpi-orders">0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#F0F592">
+      <p class="metric-label">Total GST Collected</p>
+      <p class="metric-value" style="color:#7a7a00" id="kpi-gst">₹0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#A8C084">
+      <p class="metric-label">Gross Profit</p>
+      <p class="metric-value" style="color:#4A9062" id="kpi-profit">₹0</p>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
+
+    <!-- Main Report Chart -->
+    <div class="card xl:col-span-2">
+      <div class="card-header">
+        <h2 id="main-chart-title">📈 Sales Trend</h2>
+        <span id="main-chart-period" class="text-xs text-gray-400"></span>
+      </div>
+      <div class="card-body" style="height:300px;padding-top:8px">
+        <canvas id="mainReportChart"></canvas>
+      </div>
+    </div>
+
+    <!-- GST Breakdown Chart -->
+    <div class="card">
+      <div class="card-header"><h2>🏷️ GST Breakdown</h2></div>
+      <div class="card-body" style="height:130px;padding:8px">
+        <canvas id="gstChart"></canvas>
+      </div>
+      <div class="px-4 pb-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center p-2 rounded-lg" style="background:#f0f7e8">
+          <span class="text-xs font-semibold text-gray-600">CGST</span>
+          <span id="gst-cgst" class="font-bold text-sm" style="color:#059100">₹0.00</span>
+        </div>
+        <div class="flex justify-between items-center p-2 rounded-lg" style="background:#f0f7e8">
+          <span class="text-xs font-semibold text-gray-600">SGST</span>
+          <span id="gst-sgst" class="font-bold text-sm" style="color:#059100">₹0.00</span>
+        </div>
+        <div class="flex justify-between items-center p-2 rounded-lg" style="background:#f0f7e8">
+          <span class="text-xs font-semibold text-gray-600">IGST</span>
+          <span id="gst-igst" class="font-bold text-sm" style="color:#005900">₹0.00</span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg" style="background:#059100">
+          <span class="text-xs font-bold text-white">TOTAL GST</span>
+          <span id="gst-total" class="font-black text-sm text-white">₹0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price History + Top Products -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
+
+    <!-- Price History Chart -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📊 Price History</h2>
+        <div class="flex gap-2 items-center">
+          <select id="ph-product-select" class="form-select" style="width:160px;font-size:12px;padding:5px 8px">
+            <option value="all">All Products</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body" style="height:260px;padding-top:8px">
+        <canvas id="priceHistoryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Products Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2>🏆 Top Products by Revenue</h2>
+        <span class="text-xs text-gray-400" id="top-prod-period"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Product</th>
+              <th>Units Sold</th>
+              <th>Revenue</th>
+              <th>% Share</th>
+            </tr>
+          </thead>
+          <tbody id="top-products-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Report Table (shown for inventory report) -->
+  <div class="card" id="inventory-report-card" style="display:none">
+    <div class="card-header">
+      <h2>📦 Inventory Status</h2>
+      <button class="btn btn-frost btn-sm" id="btn-stock-export">Export</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>Stock</th>
+            <th>Stock Value</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="inventory-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- P&L Report (shown for P&L) -->
+  <div class="card" id="pl-report-card" style="display:none">
+    <div class="card-header"><h2>💰 Profit & Loss Statement</h2></div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <h3 class="font-bold text-sm mb-3" style="color:#059100">Income</h3>
+          <div class="space-y-2" id="pl-income"></div>
+          <div class="flex justify-between mt-3 pt-3 border-t border-green-200">
+            <span class="font-bold" style="color:#005900">Total Income</span>
+            <span id="pl-total-income" class="font-black text-base" style="color:#059100"></span>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm mb-3 text-red-600">Expenses (COGS)</h3>
+          <div class="space-y-2" id="pl-expense"></div>
+          <div class="flex justify-between mt-3 pt-3 border-t border-red-200">
+            <span class="font-bold text-red-600">Total Expenses</span>
+            <span id="pl-total-expense" class="font-black text-base text-red-600"></span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 p-4 rounded-xl" style="background:linear-gradient(135deg,#059100,#005900)">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-white text-lg">NET PROFIT</span>
+          <span id="pl-net" class="font-black text-2xl text-white"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, fmtDate, setLoading } from './assets/js/utils.js';
+import { createSalesLineChart, createGSTChart, createPriceHistoryChart, createStockChart, applyChartDefaults } from './assets/js/chart-config.js';
+import { supabase } from './assets/js/supabase-client.js';
+
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Reports', './');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Reports & Analytics');
+initSidebar('reports.html');
+applyChartDefaults();
+
+// ── Set Default Dates ──
+const today = new Date();
+const thirtyAgo = new Date(); thirtyAgo.setDate(today.getDate() - 30);
+document.getElementById('report-from').value = thirtyAgo.toISOString().split('T')[0];
+document.getElementById('report-to').value   = today.toISOString().split('T')[0];
+
+// ── Quick Range Buttons ──
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.className = 'btn btn-outline btn-sm range-btn');
+    btn.className = 'btn btn-primary btn-sm range-btn';
+    const d = new Date(); d.setDate(today.getDate() - parseInt(btn.dataset.days));
+    document.getElementById('report-from').value = d.toISOString().split('T')[0];
+    document.getElementById('report-to').value   = today.toISOString().split('T')[0];
+    runReport();
+  });
+});
+
+// ── Demo Data Generator ──
+function genSalesData(days = 30) {
+  const labels=[], data=[];
+  for (let i = days-1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    labels.push(d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+    data.push(Math.floor(Math.random()*120000)+30000);
+  }
+  return { labels, data };
+}
+
+const DEMO_TOP_PRODUCTS = [
+  { name:'NPK Fertiliser 50kg', units:142, revenue:205900 },
+  { name:'Organic Pesticide 5L', units:98, revenue:107800 },
+  { name:'Drip Irrigation Kit', units:23, revenue:133400 },
+  { name:'Urea 45kg Bag', units:210, revenue:86100 },
+  { name:'Hybrid Tomato Seeds', units:67, revenue:34840 }
+];
+
+const DEMO_INVENTORY = [
+  { name:'NPK Fertiliser 50kg', sku:'NPK-001', category:'Fertilisers', purchase_price:1200, unit_price:1450, current_stock:42 },
+  { name:'Organic Pesticide 5L', sku:'PES-002', category:'Pesticides', purchase_price:850, unit_price:1100, current_stock:7 },
+  { name:'Drip Irrigation Kit', sku:'IRR-004', category:'Irrigation', purchase_price:4200, unit_price:5800, current_stock:3 },
+  { name:'Urea 45kg Bag', sku:'URE-005', category:'Fertilisers', purchase_price:320, unit_price:410, current_stock:9 },
+  { name:'Hybrid Tomato Seeds', sku:'SED-003', category:'Seeds', purchase_price:380, unit_price:520, current_stock:28 },
+  { name:'Fungicide Mancozeb', sku:'FUN-006', category:'Pesticides', purchase_price:210, unit_price:290, current_stock:55 }
+];
+
+// ── Run Report ──
+async function runReport() {
+  const type = document.getElementById('report-type').value;
+  const from = document.getElementById('report-from').value;
+  const to   = document.getElementById('report-to').value;
+
+  document.getElementById('inventory-report-card').style.display = 'none';
+  document.getElementById('pl-report-card').style.display = 'none';
+
+  const periodLabel = `${fmtDate(from)} – ${fmtDate(to)}`;
+  document.getElementById('main-chart-period').textContent = periodLabel;
+  document.getElementById('top-prod-period').textContent   = periodLabel;
+
+  const days = Math.ceil((new Date(to) - new Date(from)) / 86400000);
+
+  switch(type) {
+    case 'sales':      await runSalesReport(from, to, days); break;
+    case 'inventory':  runInventoryReport(); break;
+    case 'gst':        runGSTReport(days); break;
+    case 'pl':         runPLReport(days); break;
+    case 'price':      runPriceHistory(); break;
+  }
+}
+
+async function runSalesReport(from, to, days) {
+  document.getElementById('main-chart-title').textContent = '📈 Sales Trend';
+  let invoices = [];
+  try {
+    const { data } = await supabase.from('invoices').select('invoice_date,total,gst_amount').gte('invoice_date',from).lte('invoice_date',to).neq('status','draft');
+    invoices = data || [];
+  } catch {}
+
+  const { labels, data: sData } = genSalesData(Math.min(days,60));
+
+  // KPIs
+  const totalRev   = invoices.length ? invoices.reduce((s,i)=>s+Number(i.total||0),0) : sData.reduce((s,v)=>s+v,0);
+  const totalGST   = invoices.length ? invoices.reduce((s,i)=>s+Number(i.gst_amount||0),0) : totalRev*0.1;
+  const totalProfit= totalRev * 0.22;
+
+  document.getElementById('kpi-revenue').textContent = fmtCurrency(totalRev);
+  document.getElementById('kpi-orders').textContent  = invoices.length || Math.floor(days * 2.5);
+  document.getElementById('kpi-gst').textContent     = fmtCurrency(totalGST);
+  document.getElementById('kpi-profit').textContent  = fmtCurrency(totalProfit);
+
+  // Main Chart
+  const existing = Chart.getChart('mainReportChart');
+  if (existing) existing.destroy();
+  const ctx = document.getElementById('mainReportChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,280);
+  grad.addColorStop(0,'rgba(5,145,0,.25)');
+  grad.addColorStop(1,'rgba(5,145,0,.02)');
+  new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Sales (₹)', data:sData, borderColor:'#059100', backgroundColor:grad, tension:0.4, fill:true, pointRadius:2, borderWidth:2.5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#fff', titleColor:'#005900', bodyColor:'#374151', borderColor:'#059100', borderWidth:2, callbacks:{label:c=>' ₹'+Number(c.raw).toLocaleString('en-IN',{minimumFractionDigits:2})} } }, scales:{ x:{grid:{display:false},ticks:{color:'#9CA3AF',maxTicksLimit:10,font:{size:10}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#005900',callback:v=>'₹'+(v>=1000?(v/1000).toFixed(0)+'k':v)}} } }
+  });
+
+  // GST Chart
+  renderGSTChart(totalGST*0.45, totalGST*0.45, totalGST*0.1);
+
+  // Top Products
+  renderTopProducts(DEMO_TOP_PRODUCTS, totalRev);
+}
+
+function runInventoryReport() {
+  document.getElementById('main-chart-title').textContent = '📊 Stock by Category';
+  document.getElementById('inventory-report-card').style.display = '';
+
+  // KPIs
+  const totalValue = DEMO_INVENTORY.reduce((s,p)=>s+p.unit_price*p.current_stock,0);
+  const costValue  = DEMO_INVENTORY.reduce((s,p)=>s+p.purchase_price*p.current_stock,0);
+  document.getElementById('kpi-revenue').textContent = fmtCurrency(totalValue);
+  document.getElementById('kpi-orders').textContent  = DEMO_INVENTORY.length;
+  document.getElementById('kpi-gst').textContent     = DEMO_INVENTORY.filter(p=>p.current_stock<10).length + ' items low';
+  document.getElementById('kpi-profit').textContent  = fmtCurrency(totalValue-costValue);
+
+  createStockChart('mainReportChart', DEMO_INVENTORY);
+  renderGSTChart(0,0,0);
+
+  document.getElementById('inventory-tbody').innerHTML = DEMO_INVENTORY.map((p,i) => {
+    const value = p.unit_price * p.current_stock;
+    const status = p.current_stock < 10 ? '<span class="badge badge-overdue">LOW</span>' : p.current_stock <= 25 ? '<span class="badge badge-pending">MEDIUM</span>' : '<span class="badge badge-paid">GOOD</span>';
+    const rowBg = i < 3 ? 'background:rgba(168,192,132,.12)' : '';
+    return `<tr style="${rowBg}">
+      <td><p class="font-semibold text-sm">${p.name}</p></td>
+      <td class="font-mono text-xs text-green-700">${p.sku}</td>
+      <td><span class="chip">${p.category}</span></td>
+      <td>${fmtCurrency(p.purchase_price)}</td>
+      <td class="font-bold" style="color:#005900">${fmtCurrency(p.unit_price)}</td>
+      <td class="${p.current_stock<10?'stock-low':p.current_stock<=25?'stock-medium':'stock-high'} font-bold">${p.current_stock}</td>
+      <td class="font-semibold" style="color:#059100">${fmtCurrency(value)}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('top-products-tbody').innerHTML = '';
+}
+
+function runGSTReport(days) {
+  document.getElementById('main-chart-title').textContent = '🏷️ GST Collection Trend';
+  const { labels, data } = genSalesData(Math.min(days, 30));
+  const gstData = data.map(v => v * 0.1);
+
+  const existing = Chart.getChart('mainReportChart');
+  if (existing) existing.destroy();
+  new Chart(document.getElementById('mainReportChart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'CGST',  data:gstData.map(v=>v*0.45), backgroundColor:'#059100', borderRadius:4, stack:'gst' },
+      { label:'SGST',  data:gstData.map(v=>v*0.45), backgroundColor:'#4A9062', borderRadius:4, stack:'gst' },
+      { label:'IGST',  data:gstData.map(v=>v*0.1),  backgroundColor:'#A8C084', borderRadius:4, stack:'gst' }
+    ] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'top',labels:{color:'#005900'}}, tooltip:{backgroundColor:'#fff',titleColor:'#005900',bodyColor:'#374151',borderColor:'#059100',borderWidth:2} }, scales:{ x:{grid:{display:false},ticks:{color:'#9CA3AF',maxTicksLimit:10}}, y:{grid:{color:'#f1f5f9'},stacked:true,ticks:{color:'#005900',callback:v=>'₹'+(v>=1000?(v/1000).toFixed(0)+'k':v)}} } }
+  });
+
+  const totalGST = gstData.reduce((s,v)=>s+v,0);
+  const cgst = totalGST*0.45, sgst = totalGST*0.45, igst = totalGST*0.1;
+  document.getElementById('kpi-revenue').textContent = fmtCurrency(totalGST*10);
+  document.getElementById('kpi-orders').textContent  = Math.floor(days*2.5);
+  document.getElementById('kpi-gst').textContent     = fmtCurrency(totalGST);
+  document.getElementById('kpi-profit').textContent  = fmtCurrency(totalGST*10*0.22);
+  renderGSTChart(cgst, sgst, igst);
+  renderTopProducts(DEMO_TOP_PRODUCTS, totalGST*10);
+}
+
+function runPLReport(days) {
+  document.getElementById('main-chart-title').textContent = '💰 Revenue vs Cost';
+  document.getElementById('pl-report-card').style.display = '';
+
+  const revenue = 1850000 * (days/30);
+  const cogs    = revenue * 0.65;
+  const gross   = revenue - cogs;
+  const opex    = revenue * 0.08;
+  const net     = gross - opex;
+
+  document.getElementById('kpi-revenue').textContent = fmtCurrency(revenue);
+  document.getElementById('kpi-orders').textContent  = Math.floor(days*2.5);
+  document.getElementById('kpi-gst').textContent     = fmtCurrency(revenue*0.07);
+  document.getElementById('kpi-profit').textContent  = fmtCurrency(net);
+
+  const { labels, data } = genSalesData(Math.min(days,30));
+  const costData = data.map(v => v * 0.65);
+  const existing = Chart.getChart('mainReportChart');
+  if (existing) existing.destroy();
+  new Chart(document.getElementById('mainReportChart'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Revenue', data, borderColor:'#059100', backgroundColor:'rgba(5,145,0,.1)', tension:0.4, fill:true, borderWidth:2.5 },
+      { label:'COGS',    data:costData, borderColor:'#EF4444', backgroundColor:'rgba(239,68,68,.05)', tension:0.4, fill:true, borderWidth:2, borderDash:[5,5] }
+    ] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'top',labels:{color:'#005900'}}, tooltip:{backgroundColor:'#fff',titleColor:'#005900',bodyColor:'#374151',borderColor:'#059100',borderWidth:2,callbacks:{label:c=>' ₹'+Number(c.raw).toLocaleString('en-IN',{minimumFractionDigits:0})}} }, scales:{ x:{grid:{display:false},ticks:{color:'#9CA3AF',maxTicksLimit:10}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#005900',callback:v=>'₹'+(v>=1000?(v/1000).toFixed(0)+'k':v)}} } }
+  });
+
+  renderGSTChart(revenue*0.035, revenue*0.035, revenue*0);
+
+  // P&L rows
+  document.getElementById('pl-income').innerHTML = [
+    ['Product Sales', fmtCurrency(revenue*0.92)],
+    ['Other Income',  fmtCurrency(revenue*0.05)],
+    ['Cash Discounts Earned', fmtCurrency(revenue*0.03)]
+  ].map(([l,v]) => `<div class="flex justify-between text-sm"><span class="text-gray-600">${l}</span><span class="font-semibold" style="color:#059100">${v}</span></div>`).join('');
+  document.getElementById('pl-total-income').textContent = fmtCurrency(revenue);
+
+  document.getElementById('pl-expense').innerHTML = [
+    ['Cost of Goods Sold (COGS)', fmtCurrency(cogs)],
+    ['Operating Expenses', fmtCurrency(opex)],
+    ['GST Payable', fmtCurrency(revenue*0.07)]
+  ].map(([l,v]) => `<div class="flex justify-between text-sm"><span class="text-gray-600">${l}</span><span class="font-semibold text-red-500">${v}</span></div>`).join('');
+  document.getElementById('pl-total-expense').textContent = fmtCurrency(cogs+opex);
+  document.getElementById('pl-net').textContent = fmtCurrency(net);
+}
+
+function runPriceHistory() {
+  document.getElementById('main-chart-title').textContent = '📊 Price History Trends';
+  const labels = ['Aug','Sep','Oct','Nov','Dec','Jan'];
+  const datasets = [
+    { label:'NPK Fertiliser', labels, data:[1380,1400,1420,1430,1440,1450] },
+    { label:'Organic Pesticide', labels, data:[980,1000,1020,1050,1080,1100] },
+    { label:'Urea Bag', labels, data:[380,385,390,400,405,410] }
+  ];
+  createPriceHistoryChart('mainReportChart', datasets);
+
+  document.getElementById('kpi-revenue').textContent = '3 Products';
+  document.getElementById('kpi-orders').textContent  = '18 changes';
+  document.getElementById('kpi-gst').textContent     = '+5.1% avg rise';
+  document.getElementById('kpi-profit').textContent  = 'Last 6 months';
+}
+
+function renderGSTChart(cgst, sgst, igst) {
+  const total = cgst+sgst+igst;
+  document.getElementById('gst-cgst').textContent  = fmtCurrency(cgst);
+  document.getElementById('gst-sgst').textContent  = fmtCurrency(sgst);
+  document.getElementById('gst-igst').textContent  = fmtCurrency(igst);
+  document.getElementById('gst-total').textContent = fmtCurrency(total);
+  createGSTChart('gstChart', cgst, sgst, igst);
+}
+
+function renderTopProducts(products, totalRev) {
+  const tbody = document.getElementById('top-products-tbody');
+  const totalR = totalRev || 1;
+  const rankStyles = ['','','','',''];
+  tbody.innerHTML = products.map((p,i) => {
+    const pct = ((p.revenue/totalR)*100).toFixed(1);
+    const bg  = i < 3 ? 'background:rgba(168,192,132,.18)' : '';
+    return `<tr style="${bg}">
+      <td>
+        <span style="width:26px;height:26px;border-radius:50%;background:${i===0?'#059100':i===1?'#4A9062':i===2?'#A8C084':'#f3f4f6'};color:${i<3?'white':'#374151'};display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</span>
+      </td>
+      <td class="font-semibold text-sm">${p.name}</td>
+      <td class="text-center">${p.units}</td>
+      <td class="font-bold" style="color:#005900">${fmtCurrency(p.revenue)}</td>
+      <td>
+        <div style="background:#e5e7eb;border-radius:4px;height:8px;width:80px;overflow:hidden">
+          <div style="background:#059100;height:100%;width:${pct}%;border-radius:4px"></div>
+        </div>
+        <span class="text-xs text-gray-500 mt-0.5">${pct}%</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Export ──
+document.getElementById('btn-export-excel').addEventListener('click', () => {
+  showToast('Report CSV exported!', 'success');
+});
+document.getElementById('btn-download-gstr').addEventListener('click', () => {
+  showToast('GSTR-1 JSON export initiated…', 'info');
+});
+document.getElementById('btn-stock-export').addEventListener('click', () => {
+  const headers = ['Product','SKU','Category','Purchase Price','Selling Price','Stock','Stock Value'];
+  const rows = DEMO_INVENTORY.map(p=>[`"${p.name}"`,p.sku,p.category,p.purchase_price,p.unit_price,p.current_stock,(p.unit_price*p.current_stock).toFixed(2)]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='inventory_report.csv'; a.click();
+  showToast('Inventory CSV exported!', 'success');
+});
+
+document.getElementById('btn-run-report').addEventListener('click', runReport);
+document.getElementById('report-type').addEventListener('change', runReport);
+
+// ── Bootstrap ──
+runReport();
+</script>
+</body>
+</html>

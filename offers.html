@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Offers & Discounts | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062'}}}}</script>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Offers & Discounts</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Create and manage promotional offers</p>
+    </div>
+    <button id="btn-add-offer" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Create Offer
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+    <div class="metric-card" style="border-left-color:#059100">
+      <p class="metric-label">Active Offers</p>
+      <p id="stat-active" class="metric-value">0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#F0F592">
+      <p class="metric-label">Expiring Soon</p>
+      <p id="stat-expiring" class="metric-value" style="color:#7a7a00">0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#A8C084">
+      <p class="metric-label">Total Offers</p>
+      <p id="stat-total-offers" class="metric-value" style="color:#4A9062">0</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#EF4444">
+      <p class="metric-label">Expired</p>
+      <p id="stat-expired" class="metric-value" style="color:#EF4444">0</p>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="card mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div class="tabs" style="border:none">
+        <button class="tab-btn active" data-filter="all">All</button>
+        <button class="tab-btn" data-filter="active">Active</button>
+        <button class="tab-btn" data-filter="expired">Expired</button>
+        <button class="tab-btn" data-filter="pct">Percentage</button>
+        <button class="tab-btn" data-filter="flat">Flat</button>
+        <button class="tab-btn" data-filter="bogo">BOGO</button>
+      </div>
+      <div class="search-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="offer-search" type="text" class="form-input" placeholder="Search offers…" style="padding-left:36px;min-width:200px"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offers Grid -->
+  <div id="offers-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="card p-8 sm:col-span-2 xl:col-span-3 text-center">
+      <div class="spinner mx-auto mb-3"></div>
+      <p class="text-gray-400">Loading offers…</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Create/Edit Offer Modal -->
+<div class="modal-overlay" id="offer-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3 id="offer-modal-title">Create New Offer</h3>
+      <button onclick="document.getElementById('offer-modal').classList.remove('open')" class="btn btn-sm" style="background:#f3f4f6;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="offer-form">
+        <input type="hidden" id="offer-id"/>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Offer Title *</label>
+            <input type="text" id="of-title" class="form-input" placeholder="e.g. Summer Sale – 15% Off on Fertilisers" required/>
+          </div>
+
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Description</label>
+            <textarea id="of-desc" class="form-textarea" rows="2" placeholder="Brief offer description…"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Discount Type *</label>
+            <select id="of-type" class="form-select" onchange="updateDiscountUI()">
+              <option value="pct">Percentage (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+              <option value="bogo">Buy 1 Get 1 (BOGO)</option>
+              <option value="tiered">Tiered (Buy X get Y% off)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="disc-value-group">
+            <label class="form-label" id="disc-value-label">Discount Value *</label>
+            <div class="flex items-center gap-2">
+              <span id="disc-prefix" class="text-sm font-semibold" style="color:#059100;white-space:nowrap">%</span>
+              <input type="number" id="of-value" class="form-input" placeholder="e.g. 15" min="0" step="0.1"/>
+            </div>
+            <div id="bogo-hint" class="text-xs text-gray-400 mt-1" style="display:none">Buy 1 get 1 free – no value needed</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Valid From *</label>
+            <input type="date" id="of-from" class="form-input" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Valid To *</label>
+            <input type="date" id="of-to" class="form-input" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Minimum Order Value (₹)</label>
+            <input type="number" id="of-min-order" class="form-input" placeholder="0 = No minimum" min="0" step="100"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Max Discount Cap (₹)</label>
+            <input type="number" id="of-max-disc" class="form-input" placeholder="0 = No cap" min="0" step="100"/>
+          </div>
+
+          <!-- Applicable Products -->
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Applicable Categories / Products</label>
+            <div class="flex gap-2 mb-2 flex-wrap" id="cat-chips">
+              <label class="cat-chip-label">
+                <input type="checkbox" value="Fertilisers" class="cat-check hidden"/> 
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">Fertilisers</span>
+              </label>
+              <label class="cat-chip-label">
+                <input type="checkbox" value="Pesticides" class="cat-check hidden"/>
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">Pesticides</span>
+              </label>
+              <label class="cat-chip-label">
+                <input type="checkbox" value="Seeds" class="cat-check hidden"/>
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">Seeds</span>
+              </label>
+              <label class="cat-chip-label">
+                <input type="checkbox" value="Equipment" class="cat-check hidden"/>
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">Equipment</span>
+              </label>
+              <label class="cat-chip-label">
+                <input type="checkbox" value="Irrigation" class="cat-check hidden"/>
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">Irrigation</span>
+              </label>
+              <label class="cat-chip-label">
+                <input type="checkbox" value="All" class="cat-check hidden" id="cat-all"/>
+                <span class="chip" style="cursor:pointer;background:#f3f4f6;color:#374151">All Products</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Status Toggle -->
+          <div class="form-group">
+            <label class="form-label">Active Status</label>
+            <div class="flex items-center gap-3 mt-1">
+              <label class="toggle-switch">
+                <input type="checkbox" id="of-active" checked/>
+                <span class="toggle-slider"></span>
+              </label>
+              <span id="active-label" class="text-sm font-semibold" style="color:#059100">Active</span>
+            </div>
+          </div>
+
+          <!-- Live Preview -->
+          <div class="form-group">
+            <label class="form-label">Preview</label>
+            <div id="offer-preview" class="p-3 rounded-lg text-sm" style="background:#f0f7e8;border:1px solid #A8C084;min-height:50px">
+              <p class="text-gray-400">Fill in the form to see preview…</p>
+            </div>
+          </div>
+
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button onclick="document.getElementById('offer-modal').classList.remove('open')" class="btn btn-outline">Cancel</button>
+      <button id="save-offer-btn" onclick="saveOffer()" class="btn btn-primary">Save Offer</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.cat-chip-label input:checked + span { background: var(--frost-green) !important; color: var(--dark-green) !important; box-shadow: 0 0 0 2px var(--fir-green); }
+.offer-card { transition: transform .2s, box-shadow .2s; }
+.offer-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,89,0,.12); }
+</style>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, fmtDate, setLoading } from './assets/js/utils.js';
+import { supabase } from './assets/js/supabase-client.js';
+
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Offers', './');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Offers & Discounts');
+initSidebar('offers.html');
+
+let allOffers    = [];
+let filteredOffers = [];
+let currentFilter  = 'all';
+
+// ── DEMO DATA ──
+const today = new Date().toISOString().split('T')[0];
+const DEMO_OFFERS = [
+  { id:'of1', title:'Summer Sale – 15% Off Fertilisers', description:'Special discount on all fertiliser products', discount_type:'pct', discount_value:15, valid_from:'2024-01-01', valid_to:'2024-03-31', applicable_products:['Fertilisers'], is_active:true, min_order:5000, max_discount:2000 },
+  { id:'of2', title:'Flat ₹500 Off on Orders Above ₹10,000', description:'Bulk order discount for wholesale customers', discount_type:'flat', discount_value:500, valid_from:'2024-01-01', valid_to:'2024-12-31', applicable_products:['All'], is_active:true, min_order:10000, max_discount:0 },
+  { id:'of3', title:'BOGO on Pesticides – Buy 1 Get 1', description:'Buy any pesticide and get one free', discount_type:'bogo', discount_value:0, valid_from:'2024-01-15', valid_to:'2024-02-15', applicable_products:['Pesticides'], is_active:true, min_order:0, max_discount:0 },
+  { id:'of4', title:'New Year Special – 10% Off Seeds', description:'Welcome 2024 with discounted seed prices', discount_type:'pct', discount_value:10, valid_from:'2024-01-01', valid_to:'2024-01-15', applicable_products:['Seeds'], is_active:false, min_order:0, max_discount:500 }
+];
+
+async function loadOffers() {
+  try {
+    const { data } = await supabase.from('offers').select('*').order('created_at', { ascending: false });
+    allOffers = data?.length ? data : DEMO_OFFERS;
+  } catch { allOffers = DEMO_OFFERS; }
+  updateStats();
+  applyFilter();
+}
+
+function isExpired(offer) {
+  return new Date(offer.valid_to) < new Date();
+}
+
+function isExpiringSoon(offer) {
+  const days = (new Date(offer.valid_to) - new Date()) / 86400000;
+  return days > 0 && days <= 7;
+}
+
+function updateStats() {
+  const active   = allOffers.filter(o => o.is_active && !isExpired(o)).length;
+  const expiring = allOffers.filter(o => o.is_active && isExpiringSoon(o)).length;
+  const expired  = allOffers.filter(o => isExpired(o)).length;
+
+  document.getElementById('stat-active').textContent        = active;
+  document.getElementById('stat-expiring').textContent      = expiring;
+  document.getElementById('stat-total-offers').textContent  = allOffers.length;
+  document.getElementById('stat-expired').textContent       = expired;
+}
+
+function applyFilter() {
+  const search = document.getElementById('offer-search').value.toLowerCase();
+  filteredOffers = allOffers.filter(o => {
+    const matchSearch = !search || o.title.toLowerCase().includes(search) || (o.description||'').toLowerCase().includes(search);
+    let matchFilter = true;
+    if (currentFilter === 'active') matchFilter = o.is_active && !isExpired(o);
+    else if (currentFilter === 'expired') matchFilter = isExpired(o);
+    else if (['pct','flat','bogo','tiered'].includes(currentFilter)) matchFilter = o.discount_type === currentFilter;
+    return matchSearch && matchFilter;
+  });
+  renderOffers();
+}
+
+const typeConfig = {
+  pct:    { label:'%', bg:'rgba(5,145,0,.12)', color:'#059100', icon:'🏷️' },
+  flat:   { label:'₹', bg:'rgba(0,89,0,.1)',   color:'#005900', icon:'💰' },
+  bogo:   { label:'BOGO', bg:'rgba(240,245,146,.6)', color:'#7a7a00', icon:'🎁' },
+  tiered: { label:'Tiered', bg:'rgba(168,192,132,.3)', color:'#4A9062', icon:'📊' }
+};
+
+function renderOffers() {
+  const grid = document.getElementById('offers-grid');
+  if (!filteredOffers.length) {
+    grid.innerHTML = `<div class="card sm:col-span-2 xl:col-span-3"><div class="empty-state"><p>No offers found</p><span>Create your first offer to get started</span></div></div>`;
+    return;
+  }
+
+  grid.innerHTML = filteredOffers.map(offer => {
+    const expired = isExpired(offer);
+    const expSoon = isExpiringSoon(offer);
+    const active  = offer.is_active && !expired;
+    const cfg     = typeConfig[offer.discount_type] || typeConfig.pct;
+    const cats    = (offer.applicable_products || []).join(', ') || 'All Products';
+
+    const statusBadge = expired
+      ? '<span class="badge badge-overdue">Expired</span>'
+      : expSoon
+        ? '<span class="badge badge-pending">Expiring Soon</span>'
+        : offer.is_active
+          ? '<span class="badge badge-paid">Active</span>'
+          : '<span class="badge badge-draft">Inactive</span>';
+
+    const discLabel = offer.discount_type === 'bogo' ? 'Buy 1 Get 1 Free'
+      : offer.discount_type === 'flat' ? `₹${offer.discount_value} OFF`
+      : `${offer.discount_value}% OFF`;
+
+    return `
+      <div class="card offer-card" style="opacity:${expired?0.7:1}">
+        <!-- Card Header -->
+        <div class="p-4" style="background:${cfg.bg};border-bottom:1px solid rgba(0,0,0,.06)">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span style="font-size:24px">${cfg.icon}</span>
+              <div>
+                <h3 class="font-bold text-sm leading-tight" style="color:#111827">${offer.title}</h3>
+                <p class="text-xs text-gray-500 mt-0.5">${offer.description || ''}</p>
+              </div>
+            </div>
+            ${statusBadge}
+          </div>
+        </div>
+
+        <!-- Discount Highlight -->
+        <div class="flex items-center justify-center py-4" style="background:linear-gradient(135deg,${active?'rgba(5,145,0,.06)':'rgba(0,0,0,.02)'},transparent)">
+          <div class="text-center">
+            <p class="font-black text-3xl" style="color:${active?cfg.color:'#9CA3AF'}">${discLabel}</p>
+            ${offer.min_order ? `<p class="text-xs text-gray-400 mt-0.5">Min. order: ${fmtCurrency(offer.min_order)}</p>` : ''}
+            ${offer.max_discount ? `<p class="text-xs text-gray-400">Max discount: ${fmtCurrency(offer.max_discount)}</p>` : ''}
+          </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="px-4 pb-4">
+          <div class="flex flex-wrap gap-1 mb-3">
+            ${(offer.applicable_products||['All']).map(cat => `<span class="chip" style="font-size:10px">${cat}</span>`).join('')}
+          </div>
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-3">
+            <span>📅 ${fmtDate(offer.valid_from)} – ${fmtDate(offer.valid_to)}</span>
+            ${expSoon ? '<span class="text-yellow-600 font-semibold">⏰ Expiring soon!</span>' : ''}
+          </div>
+
+          <!-- Active Toggle -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-gray-500">Status</span>
+            <div class="flex items-center gap-2">
+              <label class="toggle-switch" style="width:36px;height:20px">
+                <input type="checkbox" ${offer.is_active && !expired ? 'checked' : ''} ${expired ? 'disabled' : ''}
+                  onchange="toggleOffer('${offer.id}', this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="text-xs ${active ? 'font-semibold' : 'text-gray-400'}" style="color:${active?'#059100':''}">
+                ${active ? 'Active' : expired ? 'Expired' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="editOffer('${offer.id}')" class="btn btn-outline btn-sm flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+            <button onclick="deleteOffer('${offer.id}')" class="btn btn-danger btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Toggle Offer ──
+window.toggleOffer = async (id, active) => {
+  try {
+    await supabase.from('offers').update({ is_active: active }).eq('id', id);
+  } catch {}
+  const idx = allOffers.findIndex(o => o.id === id);
+  if (idx !== -1) allOffers[idx].is_active = active;
+  updateStats();
+  showToast(active ? 'Offer activated' : 'Offer deactivated', active ? 'success' : 'info');
+};
+
+// ── Delete Offer ──
+window.deleteOffer = async (id) => {
+  if (!confirm('Delete this offer?')) return;
+  try { await supabase.from('offers').delete().eq('id', id); } catch {}
+  allOffers = allOffers.filter(o => o.id !== id);
+  updateStats(); applyFilter();
+  showToast('Offer deleted', 'success');
+};
+
+// ── Edit Offer ──
+window.editOffer = (id) => {
+  const o = allOffers.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('offer-modal-title').textContent = 'Edit Offer';
+  document.getElementById('offer-id').value    = o.id;
+  document.getElementById('of-title').value    = o.title;
+  document.getElementById('of-desc').value     = o.description || '';
+  document.getElementById('of-type').value     = o.discount_type;
+  document.getElementById('of-value').value    = o.discount_value || '';
+  document.getElementById('of-from').value     = o.valid_from;
+  document.getElementById('of-to').value       = o.valid_to;
+  document.getElementById('of-min-order').value= o.min_order || '';
+  document.getElementById('of-max-disc').value = o.max_discount || '';
+  document.getElementById('of-active').checked = o.is_active;
+
+  document.querySelectorAll('.cat-check').forEach(cb => {
+    cb.checked = (o.applicable_products||[]).includes(cb.value);
+    if (cb.checked) cb.nextElementSibling.style.background = 'var(--frost-green)';
+  });
+
+  updateDiscountUI();
+  document.getElementById('offer-modal').classList.add('open');
+};
+
+// ── Add Offer ──
+document.getElementById('btn-add-offer').addEventListener('click', () => {
+  document.getElementById('offer-modal-title').textContent = 'Create New Offer';
+  document.getElementById('offer-form').reset();
+  document.getElementById('offer-id').value = '';
+  document.getElementById('of-active').checked = true;
+  document.querySelectorAll('.cat-check').forEach(cb => { cb.checked = false; cb.nextElementSibling.style.background=''; });
+  const today = new Date().toISOString().split('T')[0];
+  const futureDate = new Date(); futureDate.setDate(futureDate.getDate() + 30);
+  document.getElementById('of-from').value = today;
+  document.getElementById('of-to').value   = futureDate.toISOString().split('T')[0];
+  updateDiscountUI();
+  document.getElementById('offer-modal').classList.add('open');
+});
+
+// ── Discount UI Toggle ──
+window.updateDiscountUI = () => {
+  const type = document.getElementById('of-type').value;
+  const prefix = document.getElementById('disc-prefix');
+  const label  = document.getElementById('disc-value-label');
+  const bogoHint = document.getElementById('bogo-hint');
+  const valInput = document.getElementById('of-value');
+
+  if (type === 'pct')    { prefix.textContent='%'; label.textContent='Discount %'; bogoHint.style.display='none'; valInput.style.display=''; }
+  if (type === 'flat')   { prefix.textContent='₹'; label.textContent='Flat Amount (₹)'; bogoHint.style.display='none'; valInput.style.display=''; }
+  if (type === 'bogo')   { prefix.textContent=''; label.textContent=''; bogoHint.style.display='block'; valInput.style.display='none'; }
+  if (type === 'tiered') { prefix.textContent='%'; label.textContent='Discount % per Tier'; bogoHint.style.display='none'; valInput.style.display=''; }
+  updatePreview();
+};
+
+// ── Live Preview ──
+function updatePreview() {
+  const title  = document.getElementById('of-title').value || 'Your Offer Title';
+  const type   = document.getElementById('of-type').value;
+  const value  = document.getElementById('of-value').value;
+  const from   = document.getElementById('of-from').value;
+  const to     = document.getElementById('of-to').value;
+  const cats   = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value);
+  const active = document.getElementById('of-active').checked;
+
+  const discStr = type === 'bogo' ? 'Buy 1 Get 1 Free' : type === 'flat' ? `₹${value} Flat Off` : `${value}% Off`;
+
+  document.getElementById('offer-preview').innerHTML = `
+    <div style="border-left:3px solid #059100;padding-left:8px">
+      <p class="font-bold text-sm" style="color:#005900">${title}</p>
+      <p class="font-black text-lg mt-1" style="color:#059100">${discStr}</p>
+      <p class="text-xs text-gray-500">Valid: ${fmtDate(from)} – ${fmtDate(to)}</p>
+      ${cats.length ? `<p class="text-xs text-gray-400 mt-1">Applies to: ${cats.join(', ')}</p>` : ''}
+      <span class="badge ${active ? 'badge-paid' : 'badge-draft'} mt-1">${active ? 'Active' : 'Inactive'}</span>
+    </div>
+  `;
+}
+
+['of-title','of-type','of-value','of-from','of-to'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', updatePreview);
+});
+document.getElementById('of-active').addEventListener('change', () => {
+  const active = document.getElementById('of-active').checked;
+  document.getElementById('active-label').textContent = active ? 'Active' : 'Inactive';
+  document.getElementById('active-label').style.color = active ? '#059100' : '#9CA3AF';
+  updatePreview();
+});
+
+document.querySelectorAll('.cat-chip-label').forEach(label => {
+  label.addEventListener('change', () => {
+    label.querySelector('.cat-check').checked
+      ? label.querySelector('span').style.background = 'var(--frost-green)'
+      : label.querySelector('span').style.cssText = 'cursor:pointer;background:#f3f4f6;color:#374151';
+    updatePreview();
+  });
+});
+
+// ── Save Offer ──
+window.saveOffer = async () => {
+  const id    = document.getElementById('offer-id').value;
+  const title = document.getElementById('of-title').value.trim();
+  const from  = document.getElementById('of-from').value;
+  const to    = document.getElementById('of-to').value;
+  if (!title) { showToast('Offer title is required', 'error'); return; }
+  if (!from || !to) { showToast('Please set validity dates', 'error'); return; }
+
+  const cats = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value);
+
+  const offerData = {
+    title,
+    description:    document.getElementById('of-desc').value.trim(),
+    discount_type:  document.getElementById('of-type').value,
+    discount_value: parseFloat(document.getElementById('of-value').value) || 0,
+    valid_from: from, valid_to: to,
+    applicable_products: cats.length ? cats : ['All'],
+    is_active:  document.getElementById('of-active').checked,
+    min_order:  parseFloat(document.getElementById('of-min-order').value) || 0,
+    max_discount: parseFloat(document.getElementById('of-max-disc').value) || 0
+  };
+
+  const btn = document.getElementById('save-offer-btn');
+  setLoading(btn, true);
+
+  try {
+    if (id) {
+      const { error } = await supabase.from('offers').update(offerData).eq('id', id);
+      if (error) throw error;
+      const idx = allOffers.findIndex(o => o.id === id);
+      if (idx !== -1) allOffers[idx] = { ...allOffers[idx], ...offerData };
+      showToast('Offer updated!', 'success');
+    } else {
+      const { data, error } = await supabase.from('offers').insert(offerData).select().single();
+      if (error) throw error;
+      allOffers.unshift(data || { ...offerData, id: 'demo-'+Date.now() });
+      showToast('Offer created!', 'success');
+    }
+    updateStats(); applyFilter();
+    document.getElementById('offer-modal').classList.remove('open');
+  } catch {
+    if (id) { const idx=allOffers.findIndex(o=>o.id===id); if(idx!==-1) allOffers[idx]={...allOffers[idx],...offerData}; }
+    else allOffers.unshift({ ...offerData, id: 'demo-'+Date.now() });
+    updateStats(); applyFilter();
+    document.getElementById('offer-modal').classList.remove('open');
+    showToast(id ? 'Offer updated (demo)' : 'Offer created (demo)', 'info');
+  } finally {
+    setLoading(btn, false);
+  }
+};
+
+// ── Tabs ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilter();
+  });
+});
+
+let debounce;
+document.getElementById('offer-search').addEventListener('input', () => { clearTimeout(debounce); debounce=setTimeout(applyFilter,300); });
+
+loadOffers();
+</script>
+</body>
+</html>

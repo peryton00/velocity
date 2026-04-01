@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Invoice | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { 'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062' } } }
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/custom.css"/>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content" style="padding-bottom:40px">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Invoice Builder</h1>
+      <p class="text-sm text-gray-400 mt-0.5">
+        <span id="invoice-no-display" class="font-semibold" style="color:#059100">New Invoice</span>
+        &nbsp;|&nbsp;
+        <span id="autosave-indicator" class="autosave-indicator">Auto-save on</span>
+      </p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-draft" class="btn btn-frost">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Save Draft
+      </button>
+      <button id="btn-email" class="btn btn-dark btn-outline" style="background:transparent;border-color:#005900;color:#005900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Invoice
+      </button>
+      <button id="btn-pdf" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Generate PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+    <!-- LEFT: Invoice Form -->
+    <div class="xl:col-span-2 flex flex-col gap-5">
+
+      <!-- Invoice Header Info -->
+      <div class="card">
+        <div class="card-header"><h2>Invoice Details</h2></div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="form-group">
+              <label class="form-label">Invoice Number *</label>
+              <input type="text" id="inv-no" class="form-input font-mono font-bold" placeholder="Auto-generated" readonly style="background:#f9fafb;color:#059100"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Invoice Date *</label>
+              <input type="date" id="inv-date" class="form-input" required/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date *</label>
+              <input type="date" id="inv-due" class="form-input" required/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Terms</label>
+              <select id="inv-terms" class="form-select">
+                <option value="Immediate">Immediate</option>
+                <option value="Net 15">Net 15 Days</option>
+                <option value="Net 30" selected>Net 30 Days</option>
+                <option value="Net 45">Net 45 Days</option>
+                <option value="Net 60">Net 60 Days</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Place of Supply</label>
+              <select id="inv-pos" class="form-select">
+                <option>Gujarat (24)</option>
+                <option>Maharashtra (27)</option>
+                <option>Rajasthan (08)</option>
+                <option>Delhi (07)</option>
+                <option>Karnataka (29)</option>
+                <option>Tamil Nadu (33)</option>
+                <option>Uttar Pradesh (09)</option>
+                <option>West Bengal (19)</option>
+                <option>Telangana (36)</option>
+                <option>Andhra Pradesh (28)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">GST Type</label>
+              <select id="inv-gst-type" class="form-select">
+                <option value="intra">Intra-State (CGST + SGST)</option>
+                <option value="inter">Inter-State (IGST)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Selection -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Bill To / Ship To</h2>
+          <button id="btn-new-customer" class="btn btn-outline btn-sm">+ New Customer</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Select Customer *</label>
+            <div style="position:relative">
+              <input type="text" id="customer-search" class="form-input" placeholder="Type name, GSTIN or phone to search…" autocomplete="off"/>
+              <div id="customer-dropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #059100;border-radius:8px;z-index:100;display:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.1)"></div>
+            </div>
+          </div>
+          <!-- Customer Info Display -->
+          <div id="customer-info" style="display:none" class="p-3 rounded-lg" style="background:#f0f7e8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase">Bill To</p>
+                <p id="bill-name" class="font-bold" style="color:#005900"></p>
+                <p id="bill-address" class="text-sm text-gray-600"></p>
+                <p id="bill-gstin" class="text-xs text-gray-400 font-mono"></p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase">Ship To</p>
+                <div class="flex items-center gap-2 mb-1">
+                  <input type="checkbox" id="same-address" checked onchange="toggleShipAddress()" class="accent-green-600"/>
+                  <label for="same-address" class="text-xs text-gray-500 cursor-pointer">Same as billing</label>
+                </div>
+                <div id="ship-address-fields" style="display:none">
+                  <textarea id="ship-addr" class="form-textarea text-sm" rows="3" placeholder="Shipping address…"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Line Items</h2>
+          <button id="btn-add-row" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Row
+          </button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="line-items-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Product / Description</th>
+                <th style="width:80px">HSN</th>
+                <th style="width:60px">Qty</th>
+                <th style="width:90px">Rate (₹)</th>
+                <th style="width:70px">GST%</th>
+                <th style="width:80px">Disc%</th>
+                <th style="width:100px">Amount</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="items-tbody"></tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
+          <button id="btn-add-row-2" class="btn btn-outline btn-sm">+ Add Item</button>
+          <button class="btn btn-frost btn-sm" onclick="clearItems()">Clear All</button>
+        </div>
+      </div>
+
+      <!-- Notes & Terms -->
+      <div class="card">
+        <div class="card-header"><h2>Notes & Terms</h2></div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-group">
+              <label class="form-label">Internal Notes</label>
+              <textarea id="inv-notes" class="form-textarea" rows="3" placeholder="Internal notes (not printed on invoice)…"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Terms & Conditions</label>
+              <textarea id="inv-terms-text" class="form-textarea" rows="3" placeholder="Terms shown on invoice…">1. Goods once sold will not be taken back.
+2. Interest @18% p.a. on overdue payments.
+3. All disputes subject to Ahmedabad jurisdiction.</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Live Summary Panel -->
+    <div class="flex flex-col gap-5">
+
+      <!-- Totals Card -->
+      <div class="card" style="position:sticky;top:70px">
+        <div class="card-header"><h2>Invoice Summary</h2></div>
+        <div class="card-body">
+
+          <!-- Discount Input -->
+          <div class="form-group">
+            <label class="form-label">Discount</label>
+            <div class="flex gap-2">
+              <select id="disc-type" class="form-select" style="width:100px">
+                <option value="pct">%</option>
+                <option value="flat">₹ Flat</option>
+              </select>
+              <input type="number" id="disc-value" class="form-input" placeholder="0" min="0" step="0.01"/>
+            </div>
+          </div>
+
+          <hr style="border-color:#f1f5f9;margin:8px 0 12px"/>
+
+          <!-- Totals Breakdown -->
+          <div class="flex flex-col gap-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Subtotal</span>
+              <span id="sum-subtotal" class="font-semibold">₹0.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Discount</span>
+              <span id="sum-discount" class="font-semibold text-red-500">-₹0.00</span>
+            </div>
+            <div class="flex justify-between" id="cgst-row">
+              <span class="text-gray-500">CGST</span>
+              <span id="sum-cgst" class="font-semibold">₹0.00</span>
+            </div>
+            <div class="flex justify-between" id="sgst-row">
+              <span class="text-gray-500">SGST</span>
+              <span id="sum-sgst" class="font-semibold">₹0.00</span>
+            </div>
+            <div class="flex justify-between" id="igst-row" style="display:none!important">
+              <span class="text-gray-500">IGST</span>
+              <span id="sum-igst" class="font-semibold">₹0.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Round Off</span>
+              <span id="sum-roundoff" class="font-semibold text-gray-400">₹0.00</span>
+            </div>
+            <hr style="border-color:#f1f5f9;margin:4px 0"/>
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-lg" style="color:#005900">TOTAL</span>
+              <span id="sum-total" class="font-black text-2xl" style="color:#059100">₹0.00</span>
+            </div>
+          </div>
+
+          <hr style="border-color:#f1f5f9;margin:12px 0"/>
+
+          <!-- Cash Discount Slabs -->
+          <div class="p-3 rounded-lg" style="background:#fefde8;border:1px solid #F0F592">
+            <p class="text-xs font-bold mb-2" style="color:#7a7a00">💳 Cash Discount Slabs</p>
+            <div class="text-xs text-gray-600 flex flex-col gap-1">
+              <div class="flex justify-between">
+                <span>Slab 1 (1.5%) – On Delivery:</span>
+                <span id="slab1" class="font-bold">₹0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Slab 2 (0.75%) – 30 Days:</span>
+                <span id="slab2" class="font-bold">₹0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <hr style="border-color:#f1f5f9;margin:12px 0"/>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col gap-2">
+            <button id="btn-pdf-2" class="btn btn-primary w-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Generate PDF
+            </button>
+            <button id="btn-save-2" class="btn btn-dark w-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Invoice
+            </button>
+            <button id="btn-draft-2" class="btn btn-frost w-full">Save as Draft</button>
+            <button onclick="window.print()" class="btn btn-outline btn-sm w-full no-print">🖨️ Print</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, fmtDate, validateGSTIN, setLoading, initAutosave } from '../assets/js/utils.js';
+import { supabase } from '../assets/js/supabase-client.js';
+
+// Sidebar/Topbar
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Invoices', '../');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Create Invoice');
+document.getElementById('autosave-indicator').style.display = 'flex';
+initSidebar('../invoices/create.html');
+
+// ── State ──
+let lineItems    = [];
+let selectedCustomer = null;
+let allProducts  = [];
+let allCustomers = [];
+let invoiceId    = null;
+
+// ── DEMO DATA ──
+const DEMO_CUSTOMERS = [
+  { id:'c1', name:'Sharma Electronics', company_name:'Sharma Electronics Ltd', gstin:'24AADCS1234D1ZT', phone:'9876543210', billing_address:'Shop No 5, MG Road, Ahmedabad 380001', shipping_address:'' },
+  { id:'c2', name:'Patel Distributors',  company_name:'Patel Distributors Pvt Ltd', gstin:'27AADCP5678E2ZS', phone:'9988776655', billing_address:'123 Market St, Mumbai 400001', shipping_address:'' },
+  { id:'c3', name:'Gupta Traders',       company_name:'Gupta Traders',          gstin:'08AADCG9012F3ZR', phone:'9765432109', billing_address:'45 Sanganer Rd, Jaipur 302001', shipping_address:'' }
+];
+
+const DEMO_PRODUCTS = [
+  { id:'p1', sku:'NPK-001', name:'NPK Fertiliser 50kg', hsn_code:'3102', unit_price:1450, gst_rate:5, unit:'Bag' },
+  { id:'p2', sku:'PES-002', name:'Organic Pesticide 5L', hsn_code:'3808', unit_price:1100, gst_rate:18, unit:'Ltr' },
+  { id:'p3', sku:'SED-003', name:'Hybrid Tomato Seeds 500g', hsn_code:'1209', unit_price:520, gst_rate:0, unit:'Kg' },
+  { id:'p4', sku:'IRR-004', name:'Drip Irrigation Kit', hsn_code:'8424', unit_price:5800, gst_rate:12, unit:'Nos' }
+];
+
+// ── Init ──
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('inv-date').value = today;
+const due = new Date(); due.setDate(due.getDate() + 30);
+document.getElementById('inv-due').value = due.toISOString().split('T')[0];
+
+// Generate invoice number
+async function genInvoiceNo() {
+  try {
+    const y = new Date().getFullYear();
+    const m = String(new Date().getMonth() + 1).padStart(2, '0');
+    const { count } = await supabase.from('invoices').select('*', { count: 'exact', head: true });
+    const seq = String((count || 0) + 1).padStart(4, '0');
+    const no = `INV-${y}${m}-${seq}`;
+    document.getElementById('inv-no').value = no;
+    document.getElementById('invoice-no-display').textContent = no;
+  } catch {
+    const no = `INV-${Date.now()}`;
+    document.getElementById('inv-no').value = no;
+    document.getElementById('invoice-no-display').textContent = no;
+  }
+}
+genInvoiceNo();
+
+// Payment terms → auto set due date
+document.getElementById('inv-terms').addEventListener('change', () => {
+  const days = { 'Immediate': 0, 'Net 15': 15, 'Net 30': 30, 'Net 45': 45, 'Net 60': 60 };
+  const d = new Date();
+  d.setDate(d.getDate() + (days[document.getElementById('inv-terms').value] || 30));
+  document.getElementById('inv-due').value = d.toISOString().split('T')[0];
+});
+
+// ── Load customers & products ──
+async function loadCustomers() {
+  try {
+    const { data } = await supabase.from('customers').select('*').order('name');
+    allCustomers = data?.length ? data : DEMO_CUSTOMERS;
+  } catch { allCustomers = DEMO_CUSTOMERS; }
+}
+
+async function loadProducts() {
+  try {
+    const { data } = await supabase.from('products').select('*').order('name');
+    allProducts = data?.length ? data : DEMO_PRODUCTS;
+  } catch { allProducts = DEMO_PRODUCTS; }
+}
+
+loadCustomers();
+loadProducts();
+
+// ── Customer Search ──
+const custSearch = document.getElementById('customer-search');
+const custDrop   = document.getElementById('customer-dropdown');
+
+custSearch.addEventListener('input', () => {
+  const q = custSearch.value.toLowerCase();
+  if (!q) { custDrop.style.display = 'none'; return; }
+  const results = allCustomers.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.company_name||'').toLowerCase().includes(q) ||
+    (c.gstin||'').toLowerCase().includes(q) ||
+    (c.phone||'').includes(q)
+  );
+  if (!results.length) { custDrop.style.display = 'none'; return; }
+  custDrop.innerHTML = results.map(c => `
+    <div class="px-4 py-3 cursor-pointer hover:bg-green-50 border-b border-gray-50"
+         onclick="selectCustomer('${c.id}')">
+      <p class="font-semibold text-sm">${c.company_name || c.name}</p>
+      <p class="text-xs text-gray-400">${c.phone || ''} &nbsp;|&nbsp; GSTIN: ${c.gstin || 'N/A'}</p>
+    </div>
+  `).join('');
+  custDrop.style.display = 'block';
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#customer-search') && !e.target.closest('#customer-dropdown'))
+    custDrop.style.display = 'none';
+});
+
+window.selectCustomer = (id) => {
+  selectedCustomer = allCustomers.find(c => c.id === id);
+  if (!selectedCustomer) return;
+  custSearch.value = selectedCustomer.company_name || selectedCustomer.name;
+  custDrop.style.display = 'none';
+
+  document.getElementById('bill-name').textContent    = selectedCustomer.company_name || selectedCustomer.name;
+  document.getElementById('bill-address').textContent = selectedCustomer.billing_address || '';
+  document.getElementById('bill-gstin').textContent   = 'GSTIN: ' + (selectedCustomer.gstin || 'N/A');
+  document.getElementById('customer-info').style.display = 'block';
+};
+
+window.toggleShipAddress = () => {
+  const same = document.getElementById('same-address').checked;
+  document.getElementById('ship-address-fields').style.display = same ? 'none' : 'block';
+};
+
+// ── Line Items ──
+function addRow(product = null) {
+  const idx = lineItems.length;
+  lineItems.push({
+    product_id: product?.id || '',
+    sku:        product?.sku || '',
+    name:       product?.name || '',
+    hsn_code:   product?.hsn_code || '',
+    unit:       product?.unit || 'Nos',
+    quantity:   1,
+    unit_price: product?.unit_price || 0,
+    gst_rate:   product?.gst_rate || 0,
+    discount:   0,
+    total_amount: product?.unit_price || 0
+  });
+  renderItems();
+}
+
+document.getElementById('btn-add-row').addEventListener('click', () => addRow());
+document.getElementById('btn-add-row-2').addEventListener('click', () => addRow());
+window.clearItems = () => { lineItems = []; renderItems(); recalc(); };
+
+// Add initial row
+addRow();
+
+function renderItems() {
+  const tbody = document.getElementById('items-tbody');
+  if (!lineItems.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-gray-400">No items added. Click "Add Row" to begin.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lineItems.map((item, i) => `
+    <tr>
+      <td class="text-center text-gray-400 text-sm">${i + 1}</td>
+      <td>
+        <div style="position:relative">
+          <input type="text" class="form-input item-name" data-idx="${i}" value="${item.name}"
+            placeholder="Search product…" autocomplete="off"
+            oninput="searchProduct(${i}, this.value)"
+            style="font-size:12px;padding:6px 8px"/>
+          <div id="prod-drop-${i}" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #059100;border-radius:6px;z-index:100;display:none;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
+        </div>
+      </td>
+      <td><input type="text" class="form-input" value="${item.hsn_code}" oninput="updateField(${i},'hsn_code',this.value)" style="font-size:12px;padding:6px 8px;width:70px"/></td>
+      <td><input type="number" class="form-input" value="${item.quantity}" min="1" oninput="updateField(${i},'quantity',parseFloat(this.value)||1)" style="font-size:12px;padding:6px 8px;width:55px"/></td>
+      <td><input type="number" class="form-input" value="${item.unit_price}" min="0" step="0.01" oninput="updateField(${i},'unit_price',parseFloat(this.value)||0)" style="font-size:12px;padding:6px 8px;width:85px"/></td>
+      <td>
+        <select class="form-select" onchange="updateField(${i},'gst_rate',parseFloat(this.value))" style="font-size:12px;padding:5px;width:65px">
+          ${[0,5,12,18,28].map(r=>`<option value="${r}" ${item.gst_rate==r?'selected':''}>${r}%</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" class="form-input" value="${item.discount}" min="0" max="100" step="0.5" oninput="updateField(${i},'discount',parseFloat(this.value)||0)" style="font-size:12px;padding:6px 8px;width:65px"/></td>
+      <td class="font-semibold text-sm" style="color:#005900;white-space:nowrap">
+        ${fmtCurrency(item.total_amount)}
+      </td>
+      <td>
+        <button onclick="removeRow(${i})" class="btn btn-danger btn-sm" style="padding:4px 7px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.searchProduct = (idx, query) => {
+  const drop = document.getElementById(`prod-drop-${idx}`);
+  if (!query.trim()) { drop.style.display = 'none'; return; }
+  const results = allProducts.filter(p =>
+    p.name.toLowerCase().includes(query.toLowerCase()) || (p.sku||'').toLowerCase().includes(query.toLowerCase())
+  );
+  if (!results.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = results.slice(0, 6).map(p => `
+    <div class="px-3 py-2 cursor-pointer hover:bg-green-50 border-b border-gray-50 text-xs"
+         onclick="selectProduct(${idx},'${p.id}')">
+      <span class="font-semibold">${p.name}</span>
+      <span class="text-gray-400 ml-2">${p.sku} | ₹${p.unit_price}</span>
+    </div>
+  `).join('');
+  drop.style.display = 'block';
+};
+
+window.selectProduct = (idx, productId) => {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  lineItems[idx] = { ...lineItems[idx], product_id: p.id, sku: p.sku, name: p.name, hsn_code: p.hsn_code||'', unit: p.unit||'Nos', unit_price: p.unit_price, gst_rate: p.gst_rate };
+  calcRowAmount(idx);
+  renderItems();
+  recalc();
+  document.getElementById(`prod-drop-${idx}`).style.display = 'none';
+};
+
+window.updateField = (idx, field, value) => {
+  lineItems[idx][field] = value;
+  calcRowAmount(idx);
+  const td = document.querySelector(`#items-tbody tr:nth-child(${idx+1}) td:nth-child(8)`);
+  if (td) td.textContent = fmtCurrency(lineItems[idx].total_amount);
+  recalc();
+};
+
+function calcRowAmount(idx) {
+  const item = lineItems[idx];
+  const base = item.quantity * item.unit_price;
+  const disc = base * (item.discount / 100);
+  const taxable = base - disc;
+  const gst  = taxable * (item.gst_rate / 100);
+  item.total_amount = taxable + gst;
+}
+
+window.removeRow = (idx) => { lineItems.splice(idx, 1); renderItems(); recalc(); };
+
+// ── Recalculate Totals ──
+function recalc() {
+  const subtotal  = lineItems.reduce((s, i) => s + (i.quantity * i.unit_price), 0);
+  const discType  = document.getElementById('disc-type').value;
+  const discVal   = parseFloat(document.getElementById('disc-value').value) || 0;
+  const discount  = discType === 'pct' ? subtotal * discVal / 100 : Math.min(discVal, subtotal);
+  const taxable   = subtotal - discount;
+  const gstType   = document.getElementById('inv-gst-type').value;
+
+  let cgst = 0, sgst = 0, igst = 0;
+  lineItems.forEach(item => {
+    const base = item.quantity * item.unit_price * (1 - (item.discount||0)/100);
+    const gstAmt = base * (item.gst_rate / 100);
+    if (gstType === 'intra') { cgst += gstAmt / 2; sgst += gstAmt / 2; }
+    else igst += gstAmt;
+  });
+
+  const preRound = taxable + cgst + sgst + igst;
+  const rounded  = Math.round(preRound);
+  const roundOff = rounded - preRound;
+
+  document.getElementById('sum-subtotal').textContent  = fmtCurrency(subtotal);
+  document.getElementById('sum-discount').textContent  = '-' + fmtCurrency(discount);
+  document.getElementById('sum-cgst').textContent      = fmtCurrency(cgst);
+  document.getElementById('sum-sgst').textContent      = fmtCurrency(sgst);
+  document.getElementById('sum-igst').textContent      = fmtCurrency(igst);
+  document.getElementById('sum-roundoff').textContent  = fmtCurrency(roundOff);
+  document.getElementById('sum-total').textContent     = fmtCurrency(rounded);
+  document.getElementById('slab1').textContent         = fmtCurrency(rounded * 0.985);
+  document.getElementById('slab2').textContent         = fmtCurrency(rounded * 0.9925);
+
+  // Toggle GST rows
+  const isIntra = gstType === 'intra';
+  document.getElementById('cgst-row').style.display  = isIntra ? '' : 'none';
+  document.getElementById('sgst-row').style.display  = isIntra ? '' : 'none';
+  document.getElementById('igst-row').style.cssText  = isIntra ? 'display:none!important' : '';
+
+  return { subtotal, discount, cgst, sgst, igst, roundOff, total: rounded };
+}
+
+document.getElementById('disc-type').addEventListener('change', recalc);
+document.getElementById('disc-value').addEventListener('input', recalc);
+document.getElementById('inv-gst-type').addEventListener('change', recalc);
+
+// ── Generate PDF ──
+async function generatePDF() {
+  const totals = recalc();
+  const companySettings = JSON.parse(localStorage.getItem('company_settings') || '{}');
+
+  const invoiceData = {
+    invoice_no:    document.getElementById('inv-no').value,
+    invoice_date:  document.getElementById('inv-date').value,
+    due_date:      document.getElementById('inv-due').value,
+    payment_term:  document.getElementById('inv-terms').value,
+    place_of_supply: document.getElementById('inv-pos').value,
+    customer: selectedCustomer || { name: 'Walk-in Customer', billing_address: '' },
+    items: lineItems,
+    subtotal:  totals.subtotal,
+    discount:  totals.discount,
+    cgst_amount: totals.cgst,
+    sgst_amount: totals.sgst,
+    igst_amount: totals.igst,
+    gst_amount:  totals.cgst + totals.sgst + totals.igst,
+    round_off: totals.roundOff,
+    total:     totals.total
+  };
+
+  try {
+    const { generateInvoicePDF } = await import('../assets/js/invoice-pdf.js');
+    await generateInvoicePDF(invoiceData, companySettings);
+    showToast('PDF generated successfully!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('PDF generation error. Check console.', 'error');
+  }
+}
+
+document.getElementById('btn-pdf').addEventListener('click', generatePDF);
+document.getElementById('btn-pdf-2').addEventListener('click', generatePDF);
+
+// ── Save Invoice ──
+async function saveInvoice(status = 'pending') {
+  if (!selectedCustomer) { showToast('Please select a customer', 'error'); return; }
+  if (!lineItems.length)  { showToast('Please add at least one line item', 'error'); return; }
+
+  const totals = recalc();
+  const invoiceData = {
+    invoice_no:   document.getElementById('inv-no').value,
+    invoice_date: document.getElementById('inv-date').value,
+    due_date:     document.getElementById('inv-due').value,
+    payment_term: document.getElementById('inv-terms').value,
+    customer_id:  selectedCustomer.id,
+    items:        lineItems,
+    subtotal:     totals.subtotal,
+    discount:     totals.discount,
+    gst_amount:   totals.cgst + totals.sgst + totals.igst,
+    round_off:    totals.roundOff,
+    total:        totals.total,
+    status
+  };
+
+  const btn = document.getElementById('btn-save-2');
+  setLoading(btn, true);
+
+  try {
+    const { data, error } = await supabase.from('invoices').insert(invoiceData).select().single();
+    if (error) throw error;
+    showToast(`Invoice ${status === 'draft' ? 'saved as draft' : 'saved'} successfully!`, 'success');
+    invoiceId = data.id;
+    localStorage.removeItem('invoice_draft');
+  } catch (err) {
+    showToast('Saved in demo mode (Supabase not connected)', 'info');
+    localStorage.removeItem('invoice_draft');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+document.getElementById('btn-draft').addEventListener('click',    () => saveInvoice('draft'));
+document.getElementById('btn-draft-2').addEventListener('click',  () => saveInvoice('draft'));
+document.getElementById('btn-save-2').addEventListener('click',   () => saveInvoice('pending'));
+document.getElementById('btn-email').addEventListener('click', () => {
+  if (selectedCustomer?.email) {
+    showToast(`Email would be sent to ${selectedCustomer.email}`, 'info');
+  } else {
+    showToast('No email address found for this customer', 'warning');
+  }
+});
+
+// ── Auto-Save Draft ──
+const stopAutosave = initAutosave('invoice_draft', () => ({
+  invoice_no:   document.getElementById('inv-no').value,
+  inv_date:     document.getElementById('inv-date').value,
+  customer_id:  selectedCustomer?.id,
+  lineItems,
+  disc_type:    document.getElementById('disc-type').value,
+  disc_value:   document.getElementById('disc-value').value
+}));
+
+// ── New Customer Modal shortcut ──
+document.getElementById('btn-new-customer').addEventListener('click', () => {
+  showToast('Redirecting to Customers page…', 'info');
+  setTimeout(() => window.location.href = '../customers.html', 1000);
+});
+
+// ── URL Param: load existing invoice ──
+const params = new URLSearchParams(window.location.search);
+if (params.get('id')) {
+  (async () => {
+    try {
+      const { data } = await supabase.from('invoices').select('*, customers(*)').eq('id', params.get('id')).single();
+      if (data) {
+        document.getElementById('inv-no').value   = data.invoice_no;
+        document.getElementById('inv-date').value = data.invoice_date;
+        document.getElementById('inv-due').value  = data.due_date || '';
+        document.getElementById('invoice-no-display').textContent = data.invoice_no;
+        selectedCustomer = data.customers;
+        if (selectedCustomer) {
+          custSearch.value = selectedCustomer.company_name || selectedCustomer.name;
+          window.selectCustomer(selectedCustomer.id);
+        }
+        lineItems = data.items || [];
+        renderItems();
+        recalc();
+      }
+    } catch { /* ignore */ }
+  })();
+}
+</script>
+</body>
+</html>

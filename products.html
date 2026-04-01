@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Products | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { 'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062' } } }
+    }
+  </script>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Products Catalogue</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Manage your product inventory</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-export" class="btn btn-frost btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <button id="btn-add-product" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="card mb-5">
+    <div class="card-body" style="padding:14px 20px">
+      <div class="flex flex-wrap gap-3 items-center">
+        <!-- Search -->
+        <div class="search-wrapper flex-1" style="min-width:200px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" class="form-input" placeholder="Search products…" style="padding-left:36px"/>
+        </div>
+        <!-- Category Filter -->
+        <select id="filter-category" class="form-select" style="width:160px">
+          <option value="">All Categories</option>
+          <option>Fertilisers</option>
+          <option>Pesticides</option>
+          <option>Seeds</option>
+          <option>Equipment</option>
+          <option>Irrigation</option>
+          <option>Chemicals</option>
+          <option>Tools</option>
+        </select>
+        <!-- Stock Filter -->
+        <select id="filter-stock" class="form-select" style="width:140px">
+          <option value="">All Stock</option>
+          <option value="low">Low Stock (&lt;10)</option>
+          <option value="medium">Medium (10–25)</option>
+          <option value="good">Good (&gt;25)</option>
+        </select>
+        <!-- View Toggle -->
+        <div class="flex gap-1">
+          <button id="view-table" class="btn btn-primary btn-sm" title="Table View">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </button>
+          <button id="view-grid" class="btn btn-outline btn-sm" title="Grid View">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Strip -->
+  <div class="flex gap-4 mb-5 flex-wrap">
+    <div class="card px-4 py-3 flex items-center gap-3" style="flex:1;min-width:130px">
+      <div style="width:36px;height:36px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059100" stroke-width="2"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Total Products</p>
+        <p id="stat-total" class="text-lg font-bold" style="color:#059100">—</p>
+      </div>
+    </div>
+    <div class="card px-4 py-3 flex items-center gap-3" style="flex:1;min-width:130px">
+      <div style="width:36px;height:36px;border-radius:8px;background:#fee2e2;display:flex;align-items:center;justify-content:center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Low Stock</p>
+        <p id="stat-low" class="text-lg font-bold text-red-500">—</p>
+      </div>
+    </div>
+    <div class="card px-4 py-3 flex items-center gap-3" style="flex:1;min-width:130px">
+      <div style="width:36px;height:36px;border-radius:8px;background:#f0f7e8;display:flex;align-items:center;justify-content:center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#005900" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Total Value</p>
+        <p id="stat-value" class="text-lg font-bold" style="color:#005900">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Table View -->
+  <div class="card" id="table-view">
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU / HSN</th>
+            <th>Category</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>GST%</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody">
+          <tr><td colspan="8" class="text-center py-10"><div class="spinner mx-auto mb-2"></div><span class="text-gray-400">Loading products…</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+      <span id="table-info" class="text-sm text-gray-400"></span>
+      <div id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- Products Grid View (hidden by default) -->
+  <div id="grid-view" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" style="display:none!important"></div>
+
+</main>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3 id="modal-title">Add New Product</h3>
+      <button onclick="closeProductModal()" class="btn btn-sm" style="background:#f3f4f6;color:#374151;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="product-form">
+        <input type="hidden" id="product-id"/>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="f-name" class="form-input" placeholder="e.g. NPK Fertiliser 50kg" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">SKU / Product Code *</label>
+            <input type="text" id="f-sku" class="form-input" placeholder="e.g. NPK-50KG-001" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">HSN Code</label>
+            <input type="text" id="f-hsn" class="form-input" placeholder="e.g. 3102"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Brand</label>
+            <input type="text" id="f-brand" class="form-input" placeholder="e.g. Tata Chemicals"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="f-category" class="form-select">
+              <option value="">Select Category</option>
+              <option>Fertilisers</option>
+              <option>Pesticides</option>
+              <option>Seeds</option>
+              <option>Equipment</option>
+              <option>Irrigation</option>
+              <option>Chemicals</option>
+              <option>Tools</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Unit</label>
+            <select id="f-unit" class="form-select">
+              <option>Nos</option>
+              <option>Kg</option>
+              <option>Ltr</option>
+              <option>Bag</option>
+              <option>Box</option>
+              <option>Pcs</option>
+              <option>Mtr</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Purchase Price (₹) *</label>
+            <input type="number" id="f-purchase-price" class="form-input" placeholder="0.00" step="0.01" min="0" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Selling Price (₹) *</label>
+            <input type="number" id="f-unit-price" class="form-input" placeholder="0.00" step="0.01" min="0" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">GST Rate (%)</label>
+            <select id="f-gst" class="form-select">
+              <option value="0">0% (Exempt)</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18">18%</option>
+              <option value="28">28%</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Current Stock *</label>
+            <input type="number" id="f-stock" class="form-input" placeholder="0" min="0" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Min Stock Alert Threshold</label>
+            <input type="number" id="f-min-stock" class="form-input" placeholder="10" min="0"/>
+          </div>
+
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Product Image URL (optional)</label>
+            <input type="url" id="f-image" class="form-input" placeholder="https://example.com/image.jpg"/>
+          </div>
+
+          <!-- Live Margin Calculator -->
+          <div class="md:col-span-2 p-3 rounded-lg" style="background:#f0f7e8;border:1px solid #A8C084">
+            <p class="text-xs font-semibold mb-2" style="color:#005900">💰 Margin Calculator</p>
+            <div class="flex gap-6 flex-wrap">
+              <div><span class="text-xs text-gray-500">Gross Margin</span><br><span id="calc-margin" class="font-bold text-base" style="color:#059100">—</span></div>
+              <div><span class="text-xs text-gray-500">Margin %</span><br><span id="calc-margin-pct" class="font-bold text-base" style="color:#059100">—</span></div>
+              <div><span class="text-xs text-gray-500">Selling + GST</span><br><span id="calc-with-gst" class="font-bold text-base" style="color:#005900">—</span></div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeProductModal()" class="btn btn-outline">Cancel</button>
+      <button id="save-product-btn" onclick="saveProduct()" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Product
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 style="color:#EF4444">⚠️ Confirm Delete</h3>
+      <button onclick="document.getElementById('delete-modal').classList.remove('open')" class="btn btn-sm" style="background:#f3f4f6;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+      <p class="text-sm text-gray-400 mt-2">This action cannot be undone. All associated data will be removed.</p>
+    </div>
+    <div class="modal-footer">
+      <button onclick="document.getElementById('delete-modal').classList.remove('open')" class="btn btn-outline">Cancel</button>
+      <button id="confirm-delete-btn" class="btn btn-danger">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, setLoading } from './assets/js/utils.js';
+import { supabase } from './assets/js/supabase-client.js';
+
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Products', './');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Products');
+initSidebar('products.html');
+
+// ── State ──
+let allProducts = [];
+let filtered    = [];
+let currentPage = 1;
+const PAGE_SIZE = 15;
+let currentView = 'table';
+let deleteId    = null;
+
+// ── DEMO DATA ──
+const DEMO_PRODUCTS = [
+  { id:'d1', sku:'NPK-001', hsn_code:'3102', name:'NPK Fertiliser 50kg Bag', brand:'Tata Chemicals', category:'Fertilisers', unit:'Bag', purchase_price:1200, unit_price:1450, gst_rate:5, current_stock:42, min_stock_alert:20 },
+  { id:'d2', sku:'PES-002', hsn_code:'3808', name:'Organic Pesticide 5L',    brand:'Bayer CropScience', category:'Pesticides', unit:'Ltr', purchase_price:850, unit_price:1100, gst_rate:18, current_stock:7,  min_stock_alert:15 },
+  { id:'d3', sku:'SED-003', hsn_code:'1209', name:'Hybrid Tomato Seeds 500g', brand:'Mahyco',           category:'Seeds',       unit:'Kg',  purchase_price:380, unit_price:520,  gst_rate:0,  current_stock:28, min_stock_alert:10 },
+  { id:'d4', sku:'IRR-004', hsn_code:'8424', name:'Drip Irrigation Kit 1ac', brand:'Netafim',           category:'Irrigation',  unit:'Nos', purchase_price:4200, unit_price:5800, gst_rate:12, current_stock:3,  min_stock_alert:5 },
+  { id:'d5', sku:'URE-005', hsn_code:'3102', name:'Urea 45kg Bag',           brand:'IFFCO',             category:'Fertilisers', unit:'Bag', purchase_price:320, unit_price:410,  gst_rate:5,  current_stock:9,  min_stock_alert:25 },
+  { id:'d6', sku:'FUN-006', hsn_code:'3808', name:'Fungicide Mancozeb 1kg',  brand:'Syngenta',          category:'Pesticides',  unit:'Kg',  purchase_price:210, unit_price:290,  gst_rate:18, current_stock:55, min_stock_alert:15 },
+  { id:'d7', sku:'SPR-007', hsn_code:'8424', name:'Knapsack Sprayer 16L',    brand:'Venus',             category:'Equipment',   unit:'Nos', purchase_price:680, unit_price:950,  gst_rate:12, current_stock:18, min_stock_alert:8 },
+  { id:'d8', sku:'POT-008', hsn_code:'3104', name:'Potash Muriate 50kg',     brand:'IPL',               category:'Fertilisers', unit:'Bag', purchase_price:890, unit_price:1150, gst_rate:5,  current_stock:34, min_stock_alert:20 }
+];
+
+// ── Load Products ──
+async function loadProducts() {
+  try {
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    allProducts = (error || !data?.length) ? DEMO_PRODUCTS : data;
+  } catch { allProducts = DEMO_PRODUCTS; }
+  updateStats();
+  applyFilters();
+}
+
+function updateStats() {
+  const low   = allProducts.filter(p => p.current_stock < (p.min_stock_alert || 10));
+  const value = allProducts.reduce((s, p) => s + (p.unit_price * p.current_stock), 0);
+  document.getElementById('stat-total').textContent = allProducts.length;
+  document.getElementById('stat-low').textContent   = low.length;
+  document.getElementById('stat-value').textContent = fmtCurrency(value);
+}
+
+function applyFilters() {
+  const search   = document.getElementById('search-input').value.toLowerCase();
+  const category = document.getElementById('filter-category').value;
+  const stock    = document.getElementById('filter-stock').value;
+
+  filtered = allProducts.filter(p => {
+    const matchSearch   = !search || p.name.toLowerCase().includes(search) || (p.sku||'').toLowerCase().includes(search) || (p.brand||'').toLowerCase().includes(search);
+    const matchCategory = !category || p.category === category;
+    const matchStock    = !stock ||
+      (stock === 'low'    && p.current_stock < 10) ||
+      (stock === 'medium' && p.current_stock >= 10 && p.current_stock <= 25) ||
+      (stock === 'good'   && p.current_stock > 25);
+    return matchSearch && matchCategory && matchStock;
+  });
+
+  currentPage = 1;
+  renderView();
+}
+
+function renderView() {
+  currentView === 'table' ? renderTable() : renderGrid();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('products-tbody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>No products found</p><span>Try adjusting your filters</span></div></td></tr>`;
+    document.getElementById('table-info').textContent = '';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const stockClass = s => s < 10 ? 'stock-low' : s <= 25 ? 'stock-medium' : 'stock-high';
+
+  tbody.innerHTML = page.map(p => `
+    <tr>
+      <td>
+        <div class="flex items-center gap-3">
+          <div class="product-img-placeholder" style="width:38px;height:38px;font-size:18px">
+            ${p.image_url ? `<img src="${p.image_url}" alt="" style="width:38px;height:38px;border-radius:6px;object-fit:cover"/>` : getCategoryEmoji(p.category)}
+          </div>
+          <div>
+            <p class="font-semibold text-sm" style="color:#111827">${p.name}</p>
+            <p class="text-xs text-gray-400">${p.brand || '—'}</p>
+          </div>
+        </div>
+      </td>
+      <td>
+        <p class="font-mono text-xs font-semibold" style="color:#059100">${p.sku}</p>
+        <p class="text-xs text-gray-400">${p.hsn_code || '—'}</p>
+      </td>
+      <td><span class="chip">${p.category || '—'}</span></td>
+      <td class="text-sm font-semibold text-gray-600">${fmtCurrency(p.purchase_price)}</td>
+      <td class="price-tag" style="font-size:14px">${fmtCurrency(p.unit_price)}</td>
+      <td><span class="badge badge-frost" style="background:rgba(5,145,0,.12);color:#059100">${p.gst_rate}%</span></td>
+      <td>
+        <span class="${stockClass(p.current_stock)}">${p.current_stock}</span>
+        <span class="text-xs text-gray-400"> ${p.unit || 'Nos'}</span>
+        ${p.current_stock < (p.min_stock_alert||10) ? '<span class="badge badge-overdue ml-1" style="font-size:9px">LOW</span>' : ''}
+      </td>
+      <td>
+        <div class="flex gap-2">
+          <button onclick="editProduct('${p.id}')" class="btn btn-sm btn-outline" title="Edit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onclick="confirmDelete('${p.id}','${p.name.replace(/'/g,"\\'")}','${p.sku}')" class="btn btn-sm btn-danger" title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  document.getElementById('table-info').textContent = `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length} products`;
+
+  // Pagination
+  let pgHtml = '<div class="flex gap-1">';
+  if (currentPage > 1) pgHtml += `<button class="btn btn-sm btn-outline" onclick="changePage(${currentPage-1})">‹</button>`;
+  for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) {
+    pgHtml += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-outline'}" onclick="changePage(${i})">${i}</button>`;
+  }
+  if (currentPage < totalPages) pgHtml += `<button class="btn btn-sm btn-outline" onclick="changePage(${currentPage+1})">›</button>`;
+  pgHtml += '</div>';
+  document.getElementById('pagination').innerHTML = totalPages > 1 ? pgHtml : '';
+}
+
+function renderGrid() {
+  const gridEl = document.getElementById('grid-view');
+  gridEl.innerHTML = filtered.map(p => {
+    const stockClass = p.current_stock < 10 ? 'stock-low' : p.current_stock <= 25 ? 'stock-medium' : 'stock-high';
+    return `
+      <div class="card" style="overflow:visible">
+        <div class="product-img-placeholder" style="height:110px;border-radius:12px 12px 0 0;font-size:48px">
+          ${p.image_url ? `<img src="${p.image_url}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px 12px 0 0"/>` : getCategoryEmoji(p.category)}
+        </div>
+        <div class="p-4">
+          <div class="flex items-start justify-between mb-1">
+            <p class="font-bold text-sm" style="color:#111827">${p.name}</p>
+            ${p.current_stock < (p.min_stock_alert||10) ? '<span class="badge badge-overdue" style="font-size:9px;padding:2px 6px">LOW</span>' : ''}
+          </div>
+          <p class="text-xs text-gray-400 mb-2">${p.brand || ''} • ${p.sku}</p>
+          <div class="flex items-center justify-between mb-3">
+            <span class="price-tag" style="font-size:18px">${fmtCurrency(p.unit_price)}</span>
+            <span class="chip">${p.category || 'N/A'}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm">Stock: <span class="${stockClass} font-bold">${p.current_stock} ${p.unit||'Nos'}</span></span>
+            <span class="text-xs text-gray-400">GST: ${p.gst_rate}%</span>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button onclick="editProduct('${p.id}')" class="btn btn-outline btn-sm flex-1">Edit</button>
+            <button onclick="confirmDelete('${p.id}','${p.name.replace(/'/g,"\\'")}','${p.sku}')" class="btn btn-danger btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || `<div class="col-span-4"><div class="empty-state"><p>No products found</p></div></div>`;
+}
+
+function getCategoryEmoji(cat) {
+  const map = { Fertilisers:'🌱', Pesticides:'🧪', Seeds:'🫘', Equipment:'⚙️', Irrigation:'💧', Chemicals:'⚗️', Tools:'🔧' };
+  return map[cat] || '📦';
+}
+
+window.changePage = (p) => { currentPage = p; renderView(); };
+
+// ── View Toggle ──
+document.getElementById('view-table').addEventListener('click', () => {
+  currentView = 'table';
+  document.getElementById('table-view').style.display = '';
+  document.getElementById('grid-view').style.display  = 'none';
+  document.getElementById('view-table').className = 'btn btn-primary btn-sm';
+  document.getElementById('view-grid').className  = 'btn btn-outline btn-sm';
+  renderTable();
+});
+
+document.getElementById('view-grid').addEventListener('click', () => {
+  currentView = 'grid';
+  document.getElementById('table-view').style.display = 'none';
+  document.getElementById('grid-view').style.display  = '';
+  document.getElementById('view-table').className = 'btn btn-outline btn-sm';
+  document.getElementById('view-grid').className  = 'btn btn-primary btn-sm';
+  renderGrid();
+});
+
+// ── Filters ──
+let debounce;
+document.getElementById('search-input').addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(applyFilters, 300);
+});
+document.getElementById('filter-category').addEventListener('change', applyFilters);
+document.getElementById('filter-stock').addEventListener('change', applyFilters);
+
+// ── Margin Calculator ──
+['f-purchase-price', 'f-unit-price', 'f-gst'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcMargin);
+});
+
+function calcMargin() {
+  const buy   = parseFloat(document.getElementById('f-purchase-price').value) || 0;
+  const sell  = parseFloat(document.getElementById('f-unit-price').value) || 0;
+  const gstPct = parseFloat(document.getElementById('f-gst').value) || 0;
+  const margin    = sell - buy;
+  const marginPct = buy > 0 ? ((margin / buy) * 100).toFixed(1) : '—';
+  const withGst   = sell * (1 + gstPct / 100);
+  document.getElementById('calc-margin').textContent     = sell > 0 ? fmtCurrency(margin) : '—';
+  document.getElementById('calc-margin-pct').textContent = sell > 0 ? marginPct + '%' : '—';
+  document.getElementById('calc-with-gst').textContent   = sell > 0 ? fmtCurrency(withGst) : '—';
+}
+
+// ── Add Product Modal ──
+document.getElementById('btn-add-product').addEventListener('click', () => {
+  document.getElementById('modal-title').textContent = 'Add New Product';
+  document.getElementById('product-form').reset();
+  document.getElementById('product-id').value = '';
+  ['calc-margin','calc-margin-pct','calc-with-gst'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('product-modal').classList.add('open');
+});
+
+window.closeProductModal = () => document.getElementById('product-modal').classList.remove('open');
+
+window.editProduct = (id) => {
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('modal-title').textContent = 'Edit Product';
+  document.getElementById('product-id').value     = p.id;
+  document.getElementById('f-name').value          = p.name;
+  document.getElementById('f-sku').value           = p.sku;
+  document.getElementById('f-hsn').value           = p.hsn_code || '';
+  document.getElementById('f-brand').value         = p.brand || '';
+  document.getElementById('f-category').value      = p.category || '';
+  document.getElementById('f-unit').value          = p.unit || 'Nos';
+  document.getElementById('f-purchase-price').value= p.purchase_price || '';
+  document.getElementById('f-unit-price').value    = p.unit_price || '';
+  document.getElementById('f-gst').value           = p.gst_rate || 0;
+  document.getElementById('f-stock').value         = p.current_stock || 0;
+  document.getElementById('f-min-stock').value     = p.min_stock_alert || 10;
+  document.getElementById('f-image').value         = p.image_url || '';
+  calcMargin();
+  document.getElementById('product-modal').classList.add('open');
+};
+
+window.saveProduct = async () => {
+  const id = document.getElementById('product-id').value;
+  const name = document.getElementById('f-name').value.trim();
+  const sku  = document.getElementById('f-sku').value.trim();
+  if (!name || !sku) { showToast('Product name and SKU are required', 'error'); return; }
+
+  const productData = {
+    name, sku,
+    hsn_code:       document.getElementById('f-hsn').value.trim(),
+    brand:          document.getElementById('f-brand').value.trim(),
+    category:       document.getElementById('f-category').value,
+    unit:           document.getElementById('f-unit').value,
+    purchase_price: parseFloat(document.getElementById('f-purchase-price').value) || 0,
+    unit_price:     parseFloat(document.getElementById('f-unit-price').value) || 0,
+    gst_rate:       parseFloat(document.getElementById('f-gst').value) || 0,
+    current_stock:  parseInt(document.getElementById('f-stock').value) || 0,
+    min_stock_alert:parseInt(document.getElementById('f-min-stock').value) || 10,
+    image_url:      document.getElementById('f-image').value.trim()
+  };
+
+  const btn = document.getElementById('save-product-btn');
+  setLoading(btn, true);
+
+  try {
+    if (id) {
+      const { error } = await supabase.from('products').update(productData).eq('id', id);
+      if (error) throw error;
+      const idx = allProducts.findIndex(p => p.id === id);
+      if (idx !== -1) allProducts[idx] = { ...allProducts[idx], ...productData };
+      showToast('Product updated successfully!', 'success');
+    } else {
+      const { data, error } = await supabase.from('products').insert(productData).select().single();
+      if (error) throw error;
+      allProducts.unshift(data || { ...productData, id: Date.now().toString() });
+      showToast('Product added successfully!', 'success');
+    }
+    updateStats();
+    applyFilters();
+    closeProductModal();
+  } catch (err) {
+    // Demo mode: update locally
+    if (id) {
+      const idx = allProducts.findIndex(p => p.id === id);
+      if (idx !== -1) allProducts[idx] = { ...allProducts[idx], ...productData };
+    } else {
+      allProducts.unshift({ ...productData, id: 'demo-' + Date.now() });
+    }
+    updateStats(); applyFilters(); closeProductModal();
+    showToast(id ? 'Product updated (demo mode)' : 'Product added (demo mode)', 'info');
+  } finally {
+    setLoading(btn, false);
+  }
+};
+
+window.confirmDelete = (id, name, sku) => {
+  deleteId = id;
+  document.getElementById('delete-product-name').textContent = `"${name}" (${sku})`;
+  document.getElementById('delete-modal').classList.add('open');
+};
+
+document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+  if (!deleteId) return;
+  try {
+    await supabase.from('products').delete().eq('id', deleteId);
+  } catch { /* demo fallback */ }
+  allProducts = allProducts.filter(p => p.id !== deleteId);
+  updateStats(); applyFilters();
+  document.getElementById('delete-modal').classList.remove('open');
+  showToast('Product deleted', 'success');
+  deleteId = null;
+});
+
+// ── Export CSV ──
+document.getElementById('btn-export').addEventListener('click', () => {
+  const headers = ['SKU','Name','Brand','Category','HSN','Purchase Price','Selling Price','GST%','Stock','Unit'];
+  const rows = filtered.map(p => [p.sku,`"${p.name}"`,p.brand||'',p.category||'',p.hsn_code||'',p.purchase_price,p.unit_price,p.gst_rate,p.current_stock,p.unit||'Nos']);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'products_export.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported!', 'success');
+});
+
+// ── Bootstrap ──
+loadProducts();
+</script>
+</body>
+</html>

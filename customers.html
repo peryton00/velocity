@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customers | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062'}}}}</script>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Customer Management</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Manage customers, track purchases & outstanding</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-export-cust" class="btn btn-frost btn-sm">Export CSV</button>
+      <button id="btn-add-customer" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Customer
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+    <div class="metric-card" style="border-left-color:#059100">
+      <p class="metric-label">Total Customers</p>
+      <p id="stat-cust-total" class="metric-value">—</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#F0F592">
+      <p class="metric-label">Active This Month</p>
+      <p id="stat-cust-active" class="metric-value" style="color:#7a7a00">—</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#EF4444">
+      <p class="metric-label">Outstanding Total</p>
+      <p id="stat-cust-outstanding" class="metric-value" style="color:#EF4444">—</p>
+    </div>
+    <div class="metric-card" style="border-left-color:#005900">
+      <p class="metric-label">Total Sales Value</p>
+      <p id="stat-cust-sales" class="metric-value" style="color:#005900">—</p>
+    </div>
+  </div>
+
+  <!-- Search + Filter -->
+  <div class="card mb-5">
+    <div class="card-body" style="padding:12px 20px">
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="search-wrapper flex-1" style="min-width:200px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="cust-search" class="form-input" placeholder="Search name, GSTIN, phone…" style="padding-left:36px"/>
+        </div>
+        <select id="filter-outstanding" class="form-select" style="width:180px">
+          <option value="">All Customers</option>
+          <option value="outstanding">With Outstanding</option>
+          <option value="no-outstanding">No Outstanding</option>
+        </select>
+        <select id="sort-by" class="form-select" style="width:160px">
+          <option value="name">Sort by Name</option>
+          <option value="outstanding">Sort by Outstanding</option>
+          <option value="purchases">Sort by Purchases</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="card">
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>GSTIN / PAN</th>
+            <th>Contact</th>
+            <th>City</th>
+            <th>Total Purchases</th>
+            <th>Outstanding</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="customers-tbody">
+          <tr><td colspan="7" class="text-center py-10"><div class="spinner mx-auto mb-2"></div><span class="text-gray-400">Loading…</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+      <span id="cust-table-info" class="text-sm text-gray-400"></span>
+      <div id="cust-pagination"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Customer Add/Edit Modal -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3 id="cust-modal-title">Add New Customer</h3>
+      <button onclick="document.getElementById('customer-modal').classList.remove('open')" class="btn btn-sm" style="background:#f3f4f6;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="customer-form">
+        <input type="hidden" id="cust-id"/>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="cf-name" class="form-input" placeholder="e.g. Ramesh Sharma" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company Name</label>
+            <input type="text" id="cf-company" class="form-input" placeholder="e.g. Sharma Enterprises"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">GSTIN</label>
+            <input type="text" id="cf-gstin" class="form-input" placeholder="e.g. 24AADCS1234D1ZT" maxlength="15"
+              oninput="this.value=this.value.toUpperCase()"/>
+            <p id="gstin-error" class="form-error" style="display:none">Invalid GSTIN format</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PAN</label>
+            <input type="text" id="cf-pan" class="form-input" placeholder="e.g. AADCS1234D" maxlength="10"
+              oninput="this.value=this.value.toUpperCase()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone *</label>
+            <input type="tel" id="cf-phone" class="form-input" placeholder="10-digit mobile" maxlength="10" required/>
+            <p id="phone-error" class="form-error" style="display:none">Enter valid 10-digit number</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="cf-email" class="form-input" placeholder="email@example.com"/>
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Billing Address</label>
+            <textarea id="cf-billing" class="form-textarea" rows="2" placeholder="Full billing address…"></textarea>
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Shipping Address</label>
+            <div class="flex items-center gap-2 mb-2">
+              <input type="checkbox" id="ship-same" onchange="toggleShipSame()" checked class="accent-green-600"/>
+              <label for="ship-same" class="text-xs text-gray-500 cursor-pointer">Same as billing address</label>
+            </div>
+            <textarea id="cf-shipping" class="form-textarea" rows="2" placeholder="Shipping address…" style="display:none"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Credit Limit (₹)</label>
+            <input type="number" id="cf-credit" class="form-input" placeholder="0.00" min="0" step="100"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Current Outstanding (₹)</label>
+            <input type="number" id="cf-outstanding" class="form-input" placeholder="0.00" min="0" step="0.01"/>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button onclick="document.getElementById('customer-modal').classList.remove('open')" class="btn btn-outline">Cancel</button>
+      <button id="save-cust-btn" onclick="saveCustomer()" class="btn btn-primary">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="cust-detail-modal">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header">
+      <div>
+        <h3 id="cd-name" style="color:#005900"></h3>
+        <p id="cd-company" class="text-sm text-gray-400 mt-0.5"></p>
+      </div>
+      <button onclick="document.getElementById('cust-detail-modal').classList.remove('open')" class="btn btn-sm" style="background:#f3f4f6;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+
+      <!-- Info Bar -->
+      <div class="p-4" style="background:#f0f7e8;border-bottom:1px solid #A8C084">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div><p class="text-xs text-gray-400">Phone</p><p id="cd-phone" class="font-semibold text-sm"></p></div>
+          <div><p class="text-xs text-gray-400">GSTIN</p><p id="cd-gstin" class="font-mono text-xs font-semibold"></p></div>
+          <div><p class="text-xs text-gray-400">Total Purchases</p><p id="cd-total" class="font-bold text-base" style="color:#059100"></p></div>
+          <div><p class="text-xs text-gray-400">Outstanding</p><p id="cd-outstanding" class="font-bold text-base"></p></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="px-4">
+        <div class="tabs mt-3">
+          <button class="tab-btn active" data-tab="purchases">Purchase History</button>
+          <button class="tab-btn" data-tab="invoices">Invoices</button>
+          <button class="tab-btn" data-tab="ledger">Ledger</button>
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div id="cd-tab-purchases" class="p-4">
+        <div style="height:240px;margin-bottom:12px"><canvas id="custPurchaseChart"></canvas></div>
+        <p class="text-xs text-gray-400 text-center">Monthly purchase trend (last 6 months)</p>
+      </div>
+      <div id="cd-tab-invoices" class="p-4" style="display:none">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Invoice No</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody id="cd-invoices-tbody"><tr><td colspan="4" class="text-center text-gray-400 py-4">No invoices</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="cd-tab-ledger" class="p-4" style="display:none">
+        <div class="space-y-3" id="cd-ledger-list">
+          <p class="text-center text-gray-400 py-4">Ledger entries will appear here</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, fmtDate, validateGSTIN, validatePhone, setLoading } from './assets/js/utils.js';
+import { createCustomerBarChart, applyChartDefaults } from './assets/js/chart-config.js';
+import { supabase } from './assets/js/supabase-client.js';
+
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Customers', './');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Customers');
+initSidebar('customers.html');
+applyChartDefaults();
+
+const DEMO_CUSTOMERS = [
+  { id:'c1', name:'Ramesh Sharma',    company_name:'Sharma Electronics Ltd', gstin:'24AADCS1234D1ZT', pan:'AADCS1234D', phone:'9876543210', email:'ramesh@sharma.com', billing_address:'Shop No 5, MG Road, Ahmedabad 380001', credit_limit:500000, outstanding_balance:58420, total_purchases:384500 },
+  { id:'c2', name:'Priya Patel',      company_name:'Patel Distributors Pvt Ltd', gstin:'27AADCP5678E2ZS', pan:'AADCP5678E', phone:'9988776655', email:'priya@patel.com', billing_address:'123 Market St, Mumbai 400001', credit_limit:1000000, outstanding_balance:0, total_purchases:895200 },
+  { id:'c3', name:'Anil Gupta',       company_name:'Gupta Traders',          gstin:'08AADCG9012F3ZR', pan:'AADCG9012F', phone:'9765432109', email:'anil@gupta.in', billing_address:'45 Sanganer Rd, Jaipur 302001', credit_limit:200000, outstanding_balance:37800, total_purchases:216400 },
+  { id:'c4', name:'Sunita Verma',     company_name:'Verma Supplies',         gstin:'09AADCV3456G4ZQ', pan:'AADCV3456G', phone:'9654321098', email:'sunita@verma.com', billing_address:'78 Civil Lines, Lucknow 226001', credit_limit:300000, outstanding_balance:0, total_purchases:452100 },
+  { id:'c5', name:'Rakesh Mehta',     company_name:'Mehta Wholesale',        gstin:'29AADCM7890H5ZP', pan:'AADCM7890H', phone:'9543210987', email:'rakesh@mehta.co', billing_address:'Plot 12, KIADB, Bengaluru 560058', credit_limit:750000, outstanding_balance:215630, total_purchases:1230000 }
+];
+
+let allCustomers = [];
+let filteredCustomers = [];
+let currentPage = 1;
+const PAGE_SIZE = 10;
+let activeCustomer = null;
+
+async function loadCustomers() {
+  try {
+    const { data } = await supabase.from('customers').select('*').order('name');
+    allCustomers = data?.length ? data : DEMO_CUSTOMERS;
+  } catch { allCustomers = DEMO_CUSTOMERS; }
+  updateStats();
+  applyFilters();
+}
+
+function updateStats() {
+  const total = allCustomers.length;
+  const outstanding = allCustomers.reduce((s,c) => s + (c.outstanding_balance||0), 0);
+  const sales = allCustomers.reduce((s,c) => s + (c.total_purchases||0), 0);
+  document.getElementById('stat-cust-total').textContent = total;
+  document.getElementById('stat-cust-active').textContent = Math.floor(total * 0.7);
+  document.getElementById('stat-cust-outstanding').textContent = fmtCurrency(outstanding);
+  document.getElementById('stat-cust-sales').textContent = fmtCurrency(sales);
+}
+
+function applyFilters() {
+  const search = document.getElementById('cust-search').value.toLowerCase();
+  const filter = document.getElementById('filter-outstanding').value;
+  const sort   = document.getElementById('sort-by').value;
+
+  filteredCustomers = allCustomers.filter(c => {
+    const matchSearch = !search ||
+      c.name.toLowerCase().includes(search) ||
+      (c.company_name||'').toLowerCase().includes(search) ||
+      (c.gstin||'').toLowerCase().includes(search) ||
+      (c.phone||'').includes(search);
+    const matchFilter = !filter ||
+      (filter==='outstanding' && (c.outstanding_balance||0)>0) ||
+      (filter==='no-outstanding' && !(c.outstanding_balance||0));
+    return matchSearch && matchFilter;
+  });
+
+  filteredCustomers.sort((a,b) => {
+    if (sort==='outstanding') return (b.outstanding_balance||0) - (a.outstanding_balance||0);
+    if (sort==='purchases')   return (b.total_purchases||0) - (a.total_purchases||0);
+    return a.name.localeCompare(b.name);
+  });
+
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const start = (currentPage-1) * PAGE_SIZE;
+  const page  = filteredCustomers.slice(start, start+PAGE_SIZE);
+  const tbody = document.getElementById('customers-tbody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>No customers found</p></div></td></tr>`;
+    document.getElementById('cust-table-info').textContent='';
+    document.getElementById('cust-pagination').innerHTML='';
+    return;
+  }
+
+  tbody.innerHTML = page.map(c => {
+    const outstanding = c.outstanding_balance || 0;
+    const city = extractCity(c.billing_address);
+    return `
+      <tr style="cursor:pointer" onclick="viewCustomer('${c.id}')">
+        <td>
+          <div class="flex items-center gap-3">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--frost-green);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--dark-green);font-size:14px;flex-shrink:0">
+              ${c.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p class="font-semibold text-sm">${c.name}</p>
+              <p class="text-xs text-gray-400">${c.company_name || '—'}</p>
+            </div>
+          </div>
+        </td>
+        <td>
+          ${c.gstin ? `<p class="font-mono text-xs font-semibold" style="color:#059100">${c.gstin}</p>` : '<span class="text-gray-400 text-xs">N/A</span>'}
+          ${c.pan  ? `<p class="text-xs text-gray-400">${c.pan}</p>` : ''}
+        </td>
+        <td>
+          <p class="text-sm">${c.phone || '—'}</p>
+          ${c.email ? `<p class="text-xs text-gray-400">${c.email}</p>` : ''}
+        </td>
+        <td class="text-sm text-gray-500">${city}</td>
+        <td class="font-semibold text-sm" style="color:#005900">${fmtCurrency(c.total_purchases||0)}</td>
+        <td>
+          ${outstanding > 0
+            ? `<span class="font-bold text-red-500">${fmtCurrency(outstanding)}</span>`
+            : '<span class="badge badge-paid">Cleared</span>'
+          }
+        </td>
+        <td onclick="event.stopPropagation()">
+          <div class="flex gap-2">
+            <button onclick="viewCustomer('${c.id}')" class="btn btn-sm btn-outline" title="View">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button onclick="editCustomer('${c.id}')" class="btn btn-sm btn-outline" title="Edit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <a href="invoices/create.html?customer=${c.id}" class="btn btn-primary btn-sm" title="New Invoice">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </a>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE);
+  document.getElementById('cust-table-info').textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE, filteredCustomers.length)} of ${filteredCustomers.length}`;
+
+  let pgHtml = '<div class="flex gap-1">';
+  if (currentPage > 1) pgHtml += `<button class="btn btn-sm btn-outline" onclick="window.changeCustPage(${currentPage-1})">‹</button>`;
+  for (let i = Math.max(1,currentPage-2); i <= Math.min(totalPages,currentPage+2); i++)
+    pgHtml += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-outline'}" onclick="window.changeCustPage(${i})">${i}</button>`;
+  if (currentPage < totalPages) pgHtml += `<button class="btn btn-sm btn-outline" onclick="window.changeCustPage(${currentPage+1})">›</button>`;
+  pgHtml += '</div>';
+  document.getElementById('cust-pagination').innerHTML = totalPages > 1 ? pgHtml : '';
+}
+
+window.changeCustPage = p => { currentPage = p; renderTable(); };
+
+function extractCity(address) {
+  if (!address) return '—';
+  const parts = address.split(',');
+  return parts[parts.length - 2]?.trim() || parts[0]?.trim() || '—';
+}
+
+// ── View Customer Detail ──
+window.viewCustomer = async (id) => {
+  activeCustomer = allCustomers.find(c => c.id === id);
+  if (!activeCustomer) return;
+
+  document.getElementById('cd-name').textContent        = activeCustomer.name;
+  document.getElementById('cd-company').textContent     = activeCustomer.company_name || '';
+  document.getElementById('cd-phone').textContent       = activeCustomer.phone || '—';
+  document.getElementById('cd-gstin').textContent       = activeCustomer.gstin || 'N/A';
+  document.getElementById('cd-total').textContent       = fmtCurrency(activeCustomer.total_purchases || 0);
+  const outstanding = activeCustomer.outstanding_balance || 0;
+  const cdOut = document.getElementById('cd-outstanding');
+  cdOut.textContent = fmtCurrency(outstanding);
+  cdOut.style.color = outstanding > 0 ? '#EF4444' : '#059100';
+
+  // Purchase chart demo data
+  const months = ['Aug','Sep','Oct','Nov','Dec','Jan'];
+  const purchases = months.map(() => Math.floor(Math.random() * 200000) + 50000);
+  createCustomerBarChart('custPurchaseChart', months, purchases);
+
+  // Invoices tab
+  try {
+    const { data: invs } = await supabase.from('invoices').select('invoice_no,invoice_date,total,status').eq('customer_id', id).order('invoice_date', { ascending: false }).limit(10);
+    renderCustomerInvoices(invs || []);
+  } catch {
+    renderCustomerInvoices([{ invoice_no:'INV-202401-0042', invoice_date:'2024-01-15', total:58420, status:'paid' }]);
+  }
+
+  document.getElementById('cust-detail-modal').classList.add('open');
+};
+
+function renderCustomerInvoices(invs) {
+  const tbody = document.getElementById('cd-invoices-tbody');
+  if (!invs.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-4">No invoices found</td></tr>`;
+    return;
+  }
+  const statusMap = { paid:'badge-paid', pending:'badge-pending', overdue:'badge-overdue', draft:'badge-draft' };
+  tbody.innerHTML = invs.map(inv => `
+    <tr>
+      <td class="font-mono text-xs font-semibold" style="color:#059100">${inv.invoice_no}</td>
+      <td>${fmtDate(inv.invoice_date)}</td>
+      <td class="font-bold" style="color:#005900">${fmtCurrency(inv.total)}</td>
+      <td><span class="badge ${statusMap[inv.status]||'badge-draft'}">${inv.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// Tabs in detail modal
+document.querySelectorAll('#cust-detail-modal .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cust-detail-modal .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['purchases','invoices','ledger'].forEach(t => {
+      document.getElementById(`cd-tab-${t}`).style.display = btn.dataset.tab === t ? '' : 'none';
+    });
+  });
+});
+
+// ── Add / Edit Customer ──
+document.getElementById('btn-add-customer').addEventListener('click', () => {
+  document.getElementById('cust-modal-title').textContent = 'Add New Customer';
+  document.getElementById('customer-form').reset();
+  document.getElementById('cust-id').value = '';
+  document.getElementById('customer-modal').classList.add('open');
+});
+
+window.editCustomer = (id) => {
+  const c = allCustomers.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('cust-modal-title').textContent = 'Edit Customer';
+  document.getElementById('cust-id').value      = c.id;
+  document.getElementById('cf-name').value      = c.name;
+  document.getElementById('cf-company').value   = c.company_name || '';
+  document.getElementById('cf-gstin').value     = c.gstin || '';
+  document.getElementById('cf-pan').value       = c.pan || '';
+  document.getElementById('cf-phone').value     = c.phone || '';
+  document.getElementById('cf-email').value     = c.email || '';
+  document.getElementById('cf-billing').value   = c.billing_address || '';
+  document.getElementById('cf-shipping').value  = c.shipping_address || '';
+  document.getElementById('cf-credit').value    = c.credit_limit || 0;
+  document.getElementById('cf-outstanding').value = c.outstanding_balance || 0;
+  document.getElementById('customer-modal').classList.add('open');
+};
+
+window.toggleShipSame = () => {
+  const same = document.getElementById('ship-same').checked;
+  document.getElementById('cf-shipping').style.display = same ? 'none' : '';
+};
+
+// Validate GSTIN on blur
+document.getElementById('cf-gstin').addEventListener('blur', () => {
+  const v = document.getElementById('cf-gstin').value;
+  const err = document.getElementById('gstin-error');
+  if (v && !validateGSTIN(v)) {
+    err.style.display='block';
+    document.getElementById('cf-gstin').classList.add('error');
+  } else {
+    err.style.display='none';
+    document.getElementById('cf-gstin').classList.remove('error');
+  }
+});
+
+document.getElementById('cf-phone').addEventListener('blur', () => {
+  const v = document.getElementById('cf-phone').value;
+  const err = document.getElementById('phone-error');
+  if (v && !validatePhone(v)) { err.style.display='block'; }
+  else { err.style.display='none'; }
+});
+
+window.saveCustomer = async () => {
+  const id   = document.getElementById('cust-id').value;
+  const name = document.getElementById('cf-name').value.trim();
+  const phone= document.getElementById('cf-phone').value.trim();
+  if (!name)  { showToast('Customer name is required', 'error'); return; }
+  if (phone && !validatePhone(phone)) { showToast('Invalid phone number', 'error'); return; }
+
+  const shipSame = document.getElementById('ship-same').checked;
+
+  const custData = {
+    name, phone,
+    company_name:       document.getElementById('cf-company').value.trim(),
+    gstin:              document.getElementById('cf-gstin').value.trim(),
+    pan:                document.getElementById('cf-pan').value.trim(),
+    email:              document.getElementById('cf-email').value.trim(),
+    billing_address:    document.getElementById('cf-billing').value.trim(),
+    shipping_address:   shipSame ? document.getElementById('cf-billing').value.trim() : document.getElementById('cf-shipping').value.trim(),
+    credit_limit:       parseFloat(document.getElementById('cf-credit').value) || 0,
+    outstanding_balance:parseFloat(document.getElementById('cf-outstanding').value) || 0
+  };
+
+  const btn = document.getElementById('save-cust-btn');
+  setLoading(btn, true);
+
+  try {
+    if (id) {
+      const { error } = await supabase.from('customers').update(custData).eq('id', id);
+      if (error) throw error;
+      const idx = allCustomers.findIndex(c => c.id === id);
+      if (idx !== -1) allCustomers[idx] = { ...allCustomers[idx], ...custData };
+      showToast('Customer updated!', 'success');
+    } else {
+      const { data, error } = await supabase.from('customers').insert(custData).select().single();
+      if (error) throw error;
+      allCustomers.unshift(data || { ...custData, id: 'demo-' + Date.now() });
+      showToast('Customer added!', 'success');
+    }
+    updateStats(); applyFilters();
+    document.getElementById('customer-modal').classList.remove('open');
+  } catch {
+    if (id) {
+      const idx = allCustomers.findIndex(c => c.id === id);
+      if (idx !== -1) allCustomers[idx] = { ...allCustomers[idx], ...custData };
+    } else {
+      allCustomers.unshift({ ...custData, id: 'demo-'+Date.now(), total_purchases:0 });
+    }
+    updateStats(); applyFilters();
+    document.getElementById('customer-modal').classList.remove('open');
+    showToast(id ? 'Customer updated (demo)' : 'Customer added (demo)', 'info');
+  } finally {
+    setLoading(btn, false);
+  }
+};
+
+// ── Filters ──
+let debounce;
+document.getElementById('cust-search').addEventListener('input', () => { clearTimeout(debounce); debounce=setTimeout(applyFilters,300); });
+document.getElementById('filter-outstanding').addEventListener('change', applyFilters);
+document.getElementById('sort-by').addEventListener('change', applyFilters);
+
+// ── Export ──
+document.getElementById('btn-export-cust').addEventListener('click', () => {
+  const headers = ['Name','Company','GSTIN','PAN','Phone','Email','City','Outstanding'];
+  const rows = filteredCustomers.map(c=>[`"${c.name}"`,`"${c.company_name||''}"`,c.gstin||'',c.pan||'',c.phone||'',c.email||'',extractCity(c.billing_address),c.outstanding_balance||0]);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='customers_export.csv'; a.click();
+  showToast('CSV exported!', 'success');
+});
+
+loadCustomers();
+</script>
+</body>
+</html>

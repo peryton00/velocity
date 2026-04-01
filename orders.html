@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orders | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062'}}}}</script>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold" style="color:#005900">Orders Management</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Track and manage all customer orders</p>
+    </div>
+    <div class="flex gap-2">
+      <button id="btn-export-orders" class="btn btn-frost btn-sm">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Status Tabs + Search -->
+  <div class="card mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
+      <div class="tabs" style="border:none;gap:0">
+        <button class="tab-btn active" data-status="">All Orders</button>
+        <button class="tab-btn" data-status="pending">Pending</button>
+        <button class="tab-btn" data-status="confirmed">Confirmed</button>
+        <button class="tab-btn" data-status="shipped">Shipped</button>
+        <button class="tab-btn" data-status="delivered">Delivered</button>
+        <button class="tab-btn" data-status="cancelled">Cancelled</button>
+      </div>
+      <div class="search-wrapper" style="min-width:220px">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="order-search" type="text" class="form-input" placeholder="Search order or customer…" style="padding-left:36px"/>
+      </div>
+    </div>
+    <!-- Stats Strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-0 border-t border-gray-100 mt-3">
+      <div class="text-center py-3 border-r border-gray-100">
+        <p class="text-xs text-gray-400 uppercase font-semibold">Total</p>
+        <p id="cnt-all" class="font-bold text-base" style="color:#059100">—</p>
+      </div>
+      <div class="text-center py-3 border-r border-gray-100">
+        <p class="text-xs text-yellow-600 uppercase font-semibold">Pending</p>
+        <p id="cnt-pending" class="font-bold text-base text-yellow-600">—</p>
+      </div>
+      <div class="text-center py-3 border-r border-gray-100">
+        <p class="text-xs text-blue-600 uppercase font-semibold">Shipped</p>
+        <p id="cnt-shipped" class="font-bold text-base text-blue-600">—</p>
+      </div>
+      <div class="text-center py-3 border-r border-gray-100">
+        <p class="text-xs uppercase font-semibold" style="color:#059100">Delivered</p>
+        <p id="cnt-delivered" class="font-bold text-base" style="color:#059100">—</p>
+      </div>
+      <div class="text-center py-3">
+        <p class="text-xs text-red-500 uppercase font-semibold">Cancelled</p>
+        <p id="cnt-cancelled" class="font-bold text-base text-red-500">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders List -->
+  <div id="orders-list" class="flex flex-col gap-4">
+    <div class="card p-8 text-center">
+      <div class="spinner mx-auto mb-3"></div>
+      <p class="text-gray-400">Loading orders…</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="order-detail-modal">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <div>
+        <h3 id="detail-order-no" style="color:#005900">Order Details</h3>
+        <p id="detail-customer" class="text-sm text-gray-400 mt-0.5"></p>
+      </div>
+      <button onclick="document.getElementById('order-detail-modal').classList.remove('open')"
+        class="btn btn-sm" style="background:#f3f4f6;border:none;padding:6px 10px">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 24px">
+
+      <!-- Timeline -->
+      <div class="timeline mb-5" id="order-timeline"></div>
+
+      <!-- Invoice Items -->
+      <div class="mb-5">
+        <p class="font-semibold text-sm mb-2" style="color:#005900">📦 Items</p>
+        <div id="detail-items" style="overflow-x:auto">
+          <table class="data-table"><thead><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+          <tbody id="detail-items-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- Shipment Update Form -->
+      <div class="p-4 rounded-lg" style="background:#f0f7e8;border:1px solid #A8C084">
+        <p class="font-semibold text-sm mb-3" style="color:#005900">🚚 Update Shipment</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="upd-status" class="form-select">
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Shipment Partner / Courier</label>
+            <input type="text" id="upd-courier" class="form-input" placeholder="e.g. DTDC, BlueDart"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tracking Number</label>
+            <input type="text" id="upd-tracking" class="form-input" placeholder="e.g. BD1234567890IN"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expected Delivery</label>
+            <input type="date" id="upd-delivery" class="form-input"/>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-update-order" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Update Order
+          </button>
+          <button class="btn btn-outline" onclick="document.getElementById('order-detail-modal').classList.remove('open')">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { showToast, initSidebar, getSidebarHTML, getTopbarHTML, fmtCurrency, fmtDate, setLoading } from './assets/js/utils.js';
+import { supabase } from './assets/js/supabase-client.js';
+
+document.getElementById('sidebar').innerHTML = getSidebarHTML('Orders', './');
+document.getElementById('topbar').innerHTML  = getTopbarHTML('Orders');
+initSidebar('orders.html');
+
+// ── DEMO DATA ──
+const DEMO = [
+  { id:'o1', order_no:'ORD-2401-001', customer_name:'Sharma Electronics', invoice_no:'INV-202401-0042', total:58420, status:'delivered', created_at:'2024-01-15T10:00:00', shipment_partner:'BlueDart', tracking_number:'BD12345678IN', expected_delivery:'2024-01-18', items:[{name:'NPK Fertiliser',qty:10,rate:1450,amount:14500},{name:'Organic Pesticide',qty:5,rate:1100,amount:5500}] },
+  { id:'o2', order_no:'ORD-2401-002', customer_name:'Patel Distributors',  invoice_no:'INV-202401-0041', total:124500, status:'shipped',   created_at:'2024-01-14T09:00:00', shipment_partner:'DTDC',     tracking_number:'DTDC9876543IN', expected_delivery:'2024-01-17', items:[{name:'Drip Irrigation Kit',qty:3,rate:5800,amount:17400}] },
+  { id:'o3', order_no:'ORD-2401-003', customer_name:'Gupta Traders',       invoice_no:'INV-202401-0040', total:37800, status:'pending',   created_at:'2024-01-13T08:00:00', shipment_partner:'', tracking_number:'', expected_delivery:'', items:[{name:'Urea 45kg Bag',qty:20,rate:410,amount:8200}] },
+  { id:'o4', order_no:'ORD-2401-004', customer_name:'Verma Supplies',      invoice_no:'INV-202401-0039', total:95200, status:'confirmed', created_at:'2024-01-12T11:00:00', shipment_partner:'', tracking_number:'', expected_delivery:'2024-01-20', items:[{name:'Fungicide Mancozeb',qty:30,rate:290,amount:8700}] },
+  { id:'o5', order_no:'ORD-2401-005', customer_name:'Mehta Wholesale',     invoice_no:'INV-202401-0038', total:21563, status:'cancelled', created_at:'2024-01-11T07:00:00', shipment_partner:'', tracking_number:'', expected_delivery:'', items:[{name:'Hybrid Seeds 500g',qty:15,rate:520,amount:7800}] }
+];
+
+let allOrders  = [];
+let filtered   = [];
+let currentStatus = '';
+let activeOrderId = null;
+
+// ── Load ──
+async function loadOrders() {
+  try {
+    const { data } = await supabase.from('orders')
+      .select('*, customers(name,company_name), invoices(invoice_no,total,items)')
+      .order('created_at', { ascending: false });
+    allOrders = (data && data.length) ? data.map(o => ({
+      ...o,
+      customer_name: o.customers?.company_name || o.customers?.name || '—',
+      invoice_no: o.invoices?.invoice_no || '',
+      total: o.invoices?.total || 0,
+      items: o.invoices?.items || []
+    })) : DEMO;
+  } catch { allOrders = DEMO; }
+
+  updateStats();
+  applyFilter();
+}
+
+function updateStats() {
+  document.getElementById('cnt-all').textContent       = allOrders.length;
+  document.getElementById('cnt-pending').textContent   = allOrders.filter(o => o.status === 'pending').length;
+  document.getElementById('cnt-shipped').textContent   = allOrders.filter(o => o.status === 'shipped').length;
+  document.getElementById('cnt-delivered').textContent = allOrders.filter(o => o.status === 'delivered').length;
+  document.getElementById('cnt-cancelled').textContent = allOrders.filter(o => o.status === 'cancelled').length;
+}
+
+function applyFilter() {
+  const search = document.getElementById('order-search').value.toLowerCase();
+  filtered = allOrders.filter(o => {
+    const matchStatus = !currentStatus || o.status === currentStatus;
+    const matchSearch = !search || o.order_no.toLowerCase().includes(search) || o.customer_name.toLowerCase().includes(search) || (o.tracking_number||'').toLowerCase().includes(search);
+    return matchStatus && matchSearch;
+  });
+  renderOrders();
+}
+
+const statusConfig = {
+  pending:   { label:'Pending',   cls:'badge-pending',   dot:'#F59E0B' },
+  confirmed: { label:'Confirmed', cls:'badge-confirmed', dot:'#059100' },
+  shipped:   { label:'Shipped',   cls:'badge-shipped',   dot:'#3B82F6' },
+  delivered: { label:'Delivered', cls:'badge-delivered', dot:'#059100' },
+  cancelled: { label:'Cancelled', cls:'badge-cancelled', dot:'#EF4444' }
+};
+
+function renderOrders() {
+  const el = document.getElementById('orders-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="card"><div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>No orders found</p><span>Try adjusting your filters</span></div></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(o => {
+    const cfg = statusConfig[o.status] || statusConfig.pending;
+    const steps = ['pending','confirmed','shipped','delivered'];
+    const stepIdx = steps.indexOf(o.status);
+
+    const timeline = steps.map((s, i) => {
+      const done = i <= stepIdx && o.status !== 'cancelled';
+      return `<div style="display:flex;align-items:center;gap:6px;${i < steps.length-1?'flex:1':''}">
+        <div style="width:24px;height:24px;border-radius:50%;border:2px solid ${done?'#059100':'#e5e7eb'};background:${done?'#059100':'#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${done ? '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '<span style="width:6px;height:6px;border-radius:50%;background:#e5e7eb;display:block"></span>'}
+        </div>
+        ${i < steps.length-1 ? `<div style="flex:1;height:2px;background:${i < stepIdx && o.status!=='cancelled'?'#059100':'#e5e7eb'}"></div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="card hover:shadow-md transition-shadow">
+        <div class="p-4">
+          <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-base" style="color:#005900">${o.order_no}</span>
+                <span class="badge ${cfg.cls}">${cfg.label}</span>
+              </div>
+              <p class="text-sm text-gray-500 mt-0.5">${o.customer_name} &nbsp;|&nbsp; ${fmtDate(o.created_at)}</p>
+              ${o.invoice_no ? `<p class="text-xs font-mono text-gray-400">Invoice: ${o.invoice_no}</p>` : ''}
+            </div>
+            <div class="text-right">
+              <p class="font-black text-xl" style="color:#059100">${fmtCurrency(o.total)}</p>
+              ${o.tracking_number ? `<p class="text-xs font-mono text-blue-600 mt-0.5">${o.shipment_partner || ''}: ${o.tracking_number}</p>` : ''}
+            </div>
+          </div>
+
+          <!-- Progress Timeline -->
+          ${o.status !== 'cancelled' ? `
+          <div style="display:flex;align-items:center;gap:0;margin-bottom:12px;padding:0 8px">
+            ${timeline}
+          </div>
+          <div class="grid grid-cols-4 gap-0 mb-3" style="padding:0 4px">
+            ${steps.map((s,i) => `<p class="text-xs text-center ${i <= stepIdx ? 'font-semibold' : 'text-gray-400'}" style="color:${i <= stepIdx ? '#059100' : ''}">${s.charAt(0).toUpperCase()+s.slice(1)}</p>`).join('')}
+          </div>
+          ` : `<div class="mb-3"><span class="badge badge-cancelled">❌ Order Cancelled</span></div>`}
+
+          ${o.expected_delivery ? `<p class="text-xs text-gray-400 mb-2">Expected Delivery: <strong>${fmtDate(o.expected_delivery)}</strong></p>` : ''}
+
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="openOrderDetail('${o.id}')" class="btn btn-primary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              View Details
+            </button>
+            ${o.status === 'pending' ? `<button onclick="quickUpdateStatus('${o.id}','confirmed')" class="btn btn-outline btn-sm">✓ Confirm</button>` : ''}
+            ${o.status === 'confirmed' ? `<button onclick="openOrderDetail('${o.id}')" class="btn btn-outline btn-sm">🚚 Add Shipment</button>` : ''}
+            ${o.tracking_number ? `<button onclick="copyTracking('${o.tracking_number}')" class="btn btn-frost btn-sm">📋 Copy Tracking</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Open Order Detail ──
+window.openOrderDetail = (id) => {
+  const o = allOrders.find(x => x.id === id);
+  if (!o) return;
+  activeOrderId = id;
+
+  document.getElementById('detail-order-no').textContent = o.order_no;
+  document.getElementById('detail-customer').textContent = `${o.customer_name} | ${fmtDate(o.created_at)}`;
+  document.getElementById('upd-status').value    = o.status;
+  document.getElementById('upd-courier').value   = o.shipment_partner || '';
+  document.getElementById('upd-tracking').value  = o.tracking_number || '';
+  document.getElementById('upd-delivery').value  = o.expected_delivery || '';
+
+  // Timeline
+  const steps = [
+    { label:'Order Placed',   date: o.created_at,        done: true },
+    { label:'Confirmed',      date: o.confirmed_at || '', done: ['confirmed','shipped','delivered'].includes(o.status) },
+    { label:'Shipped',        date: o.shipped_at || '',   done: ['shipped','delivered'].includes(o.status) },
+    { label:'Delivered',      date: o.actual_delivery||'',done: o.status === 'delivered' }
+  ];
+  document.getElementById('order-timeline').innerHTML = steps.map(s => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${s.done ? 'done' : ''}"></div>
+      <div>
+        <p class="font-semibold text-sm" style="color:${s.done?'#005900':'#9CA3AF'}">${s.label}</p>
+        ${s.date ? `<p class="text-xs text-gray-400">${fmtDate(s.date)}</p>` : '<p class="text-xs text-gray-300">Pending…</p>'}
+      </div>
+    </div>
+  `).join('');
+
+  // Items
+  const items = o.items || [];
+  document.getElementById('detail-items-tbody').innerHTML = items.map(item => `
+    <tr>
+      <td>${item.name || '—'}</td>
+      <td>${item.qty || item.quantity || 1}</td>
+      <td>${fmtCurrency(item.rate || item.unit_price || 0)}</td>
+      <td class="font-semibold" style="color:#005900">${fmtCurrency(item.amount || item.total_amount || 0)}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" class="text-center text-gray-400">No items</td></tr>`;
+
+  document.getElementById('order-detail-modal').classList.add('open');
+};
+
+// ── Update Order ──
+document.getElementById('btn-update-order').addEventListener('click', async () => {
+  if (!activeOrderId) return;
+  const updates = {
+    status:           document.getElementById('upd-status').value,
+    shipment_partner: document.getElementById('upd-courier').value,
+    tracking_number:  document.getElementById('upd-tracking').value,
+    expected_delivery:document.getElementById('upd-delivery').value || null
+  };
+  const btn = document.getElementById('btn-update-order');
+  setLoading(btn, true);
+  try {
+    const { error } = await supabase.from('orders').update(updates).eq('id', activeOrderId);
+    if (error) throw error;
+  } catch { /* demo fallback */ }
+
+  const idx = allOrders.findIndex(o => o.id === activeOrderId);
+  if (idx !== -1) allOrders[idx] = { ...allOrders[idx], ...updates };
+  updateStats();
+  applyFilter();
+  document.getElementById('order-detail-modal').classList.remove('open');
+  showToast('Order updated successfully!', 'success');
+  setLoading(btn, false);
+});
+
+window.quickUpdateStatus = async (id, status) => {
+  try {
+    await supabase.from('orders').update({ status }).eq('id', id);
+  } catch { /* demo */ }
+  const idx = allOrders.findIndex(o => o.id === id);
+  if (idx !== -1) allOrders[idx].status = status;
+  updateStats(); applyFilter();
+  showToast(`Order status updated to ${status}`, 'success');
+};
+
+window.copyTracking = (tracking) => {
+  navigator.clipboard?.writeText(tracking).then(() => showToast('Tracking number copied!', 'success')).catch(() => showToast(tracking, 'info'));
+};
+
+// ── Tabs ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    applyFilter();
+  });
+});
+
+let debounce;
+document.getElementById('order-search').addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(applyFilter, 300);
+});
+
+// ── Export ──
+document.getElementById('btn-export-orders').addEventListener('click', () => {
+  const headers = ['Order No','Customer','Invoice No','Amount','Status','Courier','Tracking','Expected Delivery','Date'];
+  const rows = filtered.map(o => [o.order_no,`"${o.customer_name}"`,o.invoice_no,o.total,o.status,o.shipment_partner||'',o.tracking_number||'',o.expected_delivery||'',o.created_at?.split('T')[0]||'']);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='orders_export.csv'; a.click();
+  showToast('CSV exported!', 'success');
+});
+
+// ── Real-time ──
+supabase.channel('orders-live')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+    loadOrders();
+    showToast('Order data refreshed', 'info');
+  })
+  .subscribe();
+
+loadOrders();
+</script>
+</body>
+</html>
