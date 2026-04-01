@@ -220,10 +220,10 @@ let currentFilter  = 'all';
 // ── DEMO DATA ──
 const today = new Date().toISOString().split('T')[0];
 const DEMO_OFFERS = [
-  { id:'of1', title:'Summer Sale – 15% Off Fertilisers', description:'Special discount on all fertiliser products', discount_type:'pct', discount_value:15, valid_from:'2024-01-01', valid_to:'2024-03-31', applicable_products:['Fertilisers'], is_active:true, min_order:5000, max_discount:2000 },
-  { id:'of2', title:'Flat ₹500 Off on Orders Above ₹10,000', description:'Bulk order discount for wholesale customers', discount_type:'flat', discount_value:500, valid_from:'2024-01-01', valid_to:'2024-12-31', applicable_products:['All'], is_active:true, min_order:10000, max_discount:0 },
-  { id:'of3', title:'BOGO on Pesticides – Buy 1 Get 1', description:'Buy any pesticide and get one free', discount_type:'bogo', discount_value:0, valid_from:'2024-01-15', valid_to:'2024-02-15', applicable_products:['Pesticides'], is_active:true, min_order:0, max_discount:0 },
-  { id:'of4', title:'New Year Special – 10% Off Seeds', description:'Welcome 2024 with discounted seed prices', discount_type:'pct', discount_value:10, valid_from:'2024-01-01', valid_to:'2024-01-15', applicable_products:['Seeds'], is_active:false, min_order:0, max_discount:500 }
+  { id:'of1', title:'Summer Sale – 15% Off Fertilisers', description:'Special discount on all fertiliser products', discount_type:'pct', discount_value:15, valid_from:'2026-01-01', valid_to:'2026-03-31', applicable_products:['Fertilisers'], is_active:true, min_order:5000, max_discount:2000 },
+  { id:'of2', title:'Flat ₹500 Off on Orders Above ₹10,000', description:'Bulk order discount for wholesale customers', discount_type:'flat', discount_value:500, valid_from:'2026-01-01', valid_to:'2026-12-31', applicable_products:['All'], is_active:true, min_order:10000, max_discount:0 },
+  { id:'of3', title:'BOGO on Pesticides – Buy 1 Get 1', description:'Buy any pesticide and get one free', discount_type:'bogo', discount_value:0, valid_from:'2026-01-15', valid_to:'2026-02-15', applicable_products:['Pesticides'], is_active:true, min_order:0, max_discount:0 },
+  { id:'of4', title:'New Year Special – 10% Off Seeds', description:'Welcome 2026 with discounted seed prices', discount_type:'pct', discount_value:10, valid_from:'2026-01-01', valid_to:'2026-01-15', applicable_products:['Seeds'], is_active:false, min_order:0, max_discount:500 }
 ];
 
 async function loadOffers() {

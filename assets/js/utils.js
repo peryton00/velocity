@@ -237,7 +237,7 @@ export function getSidebarHTML(active = '', basePath = './') {
     </nav>
     <div class="sidebar-footer">
       <div>Alpha Vector IMS v1.0</div>
-      <div style="margin-top:4px">© 2024 All rights reserved</div>
+      <div style="margin-top:4px">© ${new Date().getFullYear()} All rights reserved</div>
     </div>
   `;
 }

@@ -23,10 +23,95 @@
     .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     
-    .role-badge { px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide text-white; display: inline-block; }
+
     .badge-admin { background-color: #005900; }
     .badge-sales { background-color: #059100; }
     .badge-inventory { background-color: #A8C084; color:#005900; }
+
+    /* ── PREMIUM STITCH MODAL ── */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 31, 0, 0.4);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 20px;
+    }
+    .modal.open { display: flex; opacity: 1; }
+    
+    .modal-content {
+      background: #fafaf4;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 32px 64px rgba(0, 31, 0, 0.12);
+      transform: scale(0.9) translateY(10px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .modal.open .modal-content { transform: scale(1) translateY(0); }
+
+    .modal-header-premium {
+      padding: 32px 32px 16px;
+      text-align: left;
+    }
+    .modal-body-premium {
+      padding: 0 32px 32px;
+    }
+    
+    .soft-input {
+      background: #e8e8e3;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 8px 8px 0 0;
+      padding: 12px 16px;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #1a1c19;
+      transition: all 0.2s ease;
+    }
+    .soft-input:focus {
+      background: #eeeeee;
+      border-bottom-color: #005900;
+      outline: none;
+    }
+
+    .btn-premium-save {
+      background: linear-gradient(145deg, #003f00, #005900);
+      color: white;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 24px;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 16px rgba(0, 89, 0, 0.2);
+    }
+    .btn-premium-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0, 89, 0, 0.3);
+    }
+    
+    .btn-premium-cancel {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 600;
+      color: #40493c;
+      padding: 12px 20px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    .btn-premium-cancel:hover {
+      background: rgba(0,0,0,0.05);
+    }
   </style>
   <link rel="stylesheet" href="assets/css/custom.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -187,8 +272,8 @@
              <h3 class="text-lg font-bold mb-1" style="color:#005900">User Management</h3>
              <p class="text-sm text-gray-500">Invite team members and manage role-based access.</p>
            </div>
-           <!-- explicitly styled Fir Green as requested -->
-           <button class="px-4 py-2 font-bold text-sm text-white rounded shadow transition-transform hover:scale-105" style="background-color:#059100">
+           <!-- Invite tooltip for Supabase -->
+           <button onclick="window.alert('To invite new users, please add their email via the Supabase Dashboard Authentication panel. Once they register, they will appear here automatically for role assignment.')" class="px-4 py-2 font-bold text-sm text-white rounded shadow transition-transform hover:scale-105" style="background-color:#059100">
              + Invite User
            </button>
         </div>
@@ -203,34 +288,8 @@
                 <th class="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr>
-                <td class="px-6 py-4">
-                  <p class="font-bold text-[#1a1c19]">Vikram Mehta</p>
-                  <p class="text-xs text-gray-500">vikram@alphavector.com</p>
-                </td>
-                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-white" style="background-color:#005900">Admin</span></td>
-                <td class="px-6 py-4 text-sm text-gray-500">Active Now</td>
-                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4">
-                  <p class="font-bold text-[#1a1c19]">Sara Ali</p>
-                  <p class="text-xs text-gray-500">sara.sales@alphavector.com</p>
-                </td>
-                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-white" style="background-color:#059100">Sales</span></td>
-                <td class="px-6 py-4 text-sm text-gray-500">2 hours ago</td>
-                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4">
-                  <p class="font-bold text-[#1a1c19]">Ravi Kumar</p>
-                  <p class="text-xs text-gray-500">inventory@alphavector.com</p>
-                </td>
-                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase" style="background-color:#A8C084; color:#005900">Inventory</span></td>
-                <td class="px-6 py-4 text-sm text-gray-500">Yesterday</td>
-                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
-              </tr>
+            <tbody id="users-tbody" class="bg-white divide-y divide-gray-100">
+              <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
@@ -251,10 +310,54 @@
     </div>
   </div>
 
+  <!-- Premium Edit Role Modal -->
+  <div id="role-modal" class="modal">
+    <div class="modal-content">
+      <button onclick="window.closeRoleModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <div class="modal-header-premium">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xl">🌿</span>
+          <h2 class="text-xl font-extrabold tracking-tight" style="color:#005900; font-family: 'Manrope', sans-serif">Curate Profile</h2>
+        </div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-widest">Employee Management</p>
+      </div>
+      
+      <div class="modal-body-premium space-y-6">
+        <input type="hidden" id="edit-user-id"/>
+        
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider mb-2 text-gray-400 ml-1">Legal Full Name</label>
+          <input type="text" id="edit-user-name-input" class="soft-input" placeholder="e.g. Vikram Mehta"/>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider mb-2 text-gray-400 ml-1">Access Tier</label>
+          <select id="edit-user-role" class="soft-input cursor-pointer">
+            <option value="admin">Administrator (Full Control)</option>
+            <option value="sales">Sales Associate (Orders only)</option>
+            <option value="inventory">Inventory Clerk (Stock only)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100/50">
+          <button onclick="window.closeRoleModal()" class="btn-premium-cancel px-4">Keep Changes</button>
+          <button id="save-role-btn" onclick="window.saveUserRole()" class="btn-premium-save">
+            Update Permissions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script type="module">
-  import { initSidebar, getSidebarHTML, getTopbarHTML, showToast } from './assets/js/utils.js';
+  import { supabase } from './assets/js/supabase-client.js';
+  import { checkSession } from './assets/js/auth.js';
+  import { initSidebar, getSidebarHTML, getTopbarHTML, showToast, setLoading } from './assets/js/utils.js';
   
   // Inject navigation elements
   document.getElementById('sidebar').innerHTML = getSidebarHTML('Settings', './');
@@ -281,6 +384,119 @@
   window.saveSettings = function() {
     showToast('Settings saved successfully!', 'success');
   }
+
+  // ── USER MANAGEMENT LOGIC ──
+  let allProfiles = [];
+  const currentRole = localStorage.getItem('alpha_vector_role');
+
+  async function loadUsers() {
+    const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+    if (error) {
+      console.error(error);
+      return;
+    }
+    allProfiles = data || [];
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    if (!allProfiles.length) {
+       tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No users found.</td></tr>';
+       return;
+    }
+    tbody.innerHTML = allProfiles.map(p => {
+       let badgeStyle, label;
+       if (p.role === 'admin') { badgeStyle = 'background-color:#005900;color:#fff'; label = 'Admin'; }
+       else if (p.role === 'sales') { badgeStyle = 'background-color:#059100;color:#fff'; label = 'Sales'; }
+       else { badgeStyle = 'background-color:#A8C084;color:#005900'; label = 'Inventory'; }
+
+       const canEdit = currentRole === 'admin';
+       const updatedText = p.updated_at ? new Date(p.updated_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Original';
+       
+       return `
+         <tr>
+           <td class="px-6 py-4">
+             <p class="font-bold text-[#1a1c19]">${p.full_name || 'Anonymous'}</p>
+             <p class="text-xs text-gray-500">${p.id.slice(0, 12)}...</p>
+           </td>
+           <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase" style="${badgeStyle}">${label}</span></td>
+           <td class="px-6 py-4 text-sm text-gray-500">${updatedText}</td>
+           <td class="px-6 py-4 text-right">
+             ${canEdit ? `<button onclick="window.editUserRole('${p.id}')" class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button>` : `<span class="text-xs text-gray-400">Restricted</span>`}
+           </td>
+         </tr>
+       `;
+    }).join('');
+  }
+
+  window.editUserRole = (id) => {
+    if (localStorage.getItem('alpha_vector_role') !== 'admin') {
+      showToast('Access Denied: Only Admins can modify roles.', 'error');
+      return;
+    }
+    const p = allProfiles.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('edit-user-id').value = p.id;
+    document.getElementById('edit-user-name-input').value = p.full_name || '';
+    document.getElementById('edit-user-role').value = p.role || 'inventory';
+    document.getElementById('role-modal').classList.add('open');
+  };
+
+  window.closeRoleModal = () => document.getElementById('role-modal').classList.remove('open');
+
+  window.saveUserRole = async () => {
+    const id = document.getElementById('edit-user-id').value;
+    const newName = document.getElementById('edit-user-name-input').value.trim();
+    const newRole = document.getElementById('edit-user-role').value;
+    const btn = document.getElementById('save-role-btn');
+    
+    if (!id || !newName) {
+       showToast('Error: Name and User ID are required.', 'error');
+       return;
+    }
+
+    setLoading(btn, true);
+    console.log('Attempting update for:', id, 'Name:', newName, 'Role:', newRole);
+
+    try {
+      const { error, data } = await supabase.from('profiles').update({ 
+        role: newRole, 
+        full_name: newName,
+        updated_at: new Date().toISOString()
+      }).eq('id', id).select();
+      
+      if (error) {
+        console.error('Supabase Update Error:', error);
+        throw error;
+      }
+      
+      // If no error but no data returned, it usually means RLS blocked it silently or ID not found
+      if (!data || data.length === 0) {
+        throw new Error('Update failed. Check if you have Admin privileges and if the SQL RLS patch was applied.');
+      }
+
+      showToast('User role updated successfully!', 'success');
+      await loadUsers();
+      window.closeRoleModal();
+    } catch (err) {
+      console.error('Update Catch:', err);
+      showToast(err.message || 'Permission denied', 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  };
+
+  checkSession().then(() => {
+    // Attempt initial load just in case users load on entry
+    loadUsers();
+    
+    // Also attach to tab clicks for refresh
+    document.querySelector('[data-target="tab-users"]').addEventListener('click', () => {
+       loadUsers();
+    });
+  });
+
 </script>
 
 </body>

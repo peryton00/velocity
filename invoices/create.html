@@ -118,8 +118,8 @@
           <div class="form-group">
             <label class="form-label">Select Customer *</label>
             <div style="position:relative">
-              <input type="text" id="customer-search" class="form-input" placeholder="Type name, GSTIN or phone to search…" autocomplete="off"/>
-              <div id="customer-dropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #059100;border-radius:8px;z-index:100;display:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.1)"></div>
+              <input type="text" id="customer-search" class="form-input" placeholder="Type name, GSTIN or phone to search…" autocomplete="off" onkeydown="handleSearchKeydown(event, 'cust')"/>
+              <div id="customer-dropdown" class="premium-dropdown" style="display:none; left:0; right:0;"></div>
             </div>
           </div>
           <!-- Customer Info Display -->
@@ -364,33 +364,80 @@ async function loadProducts() {
 loadCustomers();
 loadProducts();
 
+// ── Search State ──
+let activeIndex  = -1;
+let currentResults = [];
+
 // ── Customer Search ──
 const custSearch = document.getElementById('customer-search');
 const custDrop   = document.getElementById('customer-dropdown');
 
 custSearch.addEventListener('input', () => {
   const q = custSearch.value.toLowerCase();
+  activeIndex = -1;
   if (!q) { custDrop.style.display = 'none'; return; }
-  const results = allCustomers.filter(c =>
+  currentResults = allCustomers.filter(c =>
     c.name.toLowerCase().includes(q) ||
     (c.company_name||'').toLowerCase().includes(q) ||
     (c.gstin||'').toLowerCase().includes(q) ||
     (c.phone||'').includes(q)
   );
-  if (!results.length) { custDrop.style.display = 'none'; return; }
-  custDrop.innerHTML = results.map(c => `
-    <div class="px-4 py-3 cursor-pointer hover:bg-green-50 border-b border-gray-50"
-         onclick="selectCustomer('${c.id}')">
-      <p class="font-semibold text-sm">${c.company_name || c.name}</p>
-      <p class="text-xs text-gray-400">${c.phone || ''} &nbsp;|&nbsp; GSTIN: ${c.gstin || 'N/A'}</p>
+  if (!currentResults.length) { custDrop.style.display = 'none'; return; }
+  renderCustomerResults();
+});
+
+function renderCustomerResults() {
+  custDrop.innerHTML = currentResults.map((c, i) => `
+    <div class="dropdown-item ${i === activeIndex ? 'active' : ''}" onclick="selectCustomer('${c.id}')">
+      <div class="col-main">
+        <p class="font-bold text-sm tracking-tight" style="color:#003f00; font-family:'Manrope',sans-serif">${c.company_name || c.name}</p>
+        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">${c.company_name ? (c.name || 'Primary Contact') : 'Customer'}</p>
+      </div>
+      <div class="col-phone text-xs text-gray-500 font-medium">${c.phone || ''}</div>
+      <div class="col-gst text-xs font-mono text-gray-400">${c.gstin || 'N/A'}</div>
     </div>
   `).join('');
   custDrop.style.display = 'block';
-});
+}
+
+// ── Keyboard Navigation ──
+window.handleSearchKeydown = (e, type, idx) => {
+  const drop = type === 'cust' ? custDrop : document.getElementById(`prod-drop-${idx}`);
+  if (!drop || drop.style.display === 'none') return;
+
+  const items = drop.querySelectorAll('.dropdown-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeIndex = Math.min(activeIndex + 1, items.length - 1);
+    updateActiveUI(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeIndex = Math.max(activeIndex - 1, 0);
+    updateActiveUI(items);
+  } else if (e.key === 'Enter') {
+    if (activeIndex >= 0) {
+      e.preventDefault();
+      items[activeIndex].click();
+    }
+  } else if (e.key === 'Escape') {
+    drop.style.display = 'none';
+  }
+};
+
+function updateActiveUI(items) {
+  items.forEach((item, i) => {
+    if (i === activeIndex) item.classList.add('active');
+    else item.classList.remove('active');
+  });
+  const active = items[activeIndex];
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#customer-search') && !e.target.closest('#customer-dropdown'))
+  if (!e.target.closest('#customer-search') && !e.target.closest('#customer-dropdown') && !e.target.closest('.premium-dropdown')) {
     custDrop.style.display = 'none';
+    document.querySelectorAll('.premium-dropdown').forEach(d => d.style.display = 'none');
+  }
 });
 
 window.selectCustomer = (id) => {
@@ -450,8 +497,9 @@ function renderItems() {
           <input type="text" class="form-input item-name" data-idx="${i}" value="${item.name}"
             placeholder="Search product…" autocomplete="off"
             oninput="searchProduct(${i}, this.value)"
+            onkeydown="handleSearchKeydown(event, 'prod', ${i})"
             style="font-size:12px;padding:6px 8px"/>
-          <div id="prod-drop-${i}" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #059100;border-radius:6px;z-index:100;display:none;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
+          <div id="prod-drop-${i}" class="premium-dropdown" style="display:none; left:0; right:0;"></div>
         </div>
       </td>
       <td><input type="text" class="form-input" value="${item.hsn_code}" oninput="updateField(${i},'hsn_code',this.value)" style="font-size:12px;padding:6px 8px;width:70px"/></td>
@@ -477,18 +525,34 @@ function renderItems() {
 
 window.searchProduct = (idx, query) => {
   const drop = document.getElementById(`prod-drop-${idx}`);
+  activeIndex = -1;
   if (!query.trim()) { drop.style.display = 'none'; return; }
-  const results = allProducts.filter(p =>
+  currentResults = allProducts.filter(p =>
     p.name.toLowerCase().includes(query.toLowerCase()) || (p.sku||'').toLowerCase().includes(query.toLowerCase())
-  );
-  if (!results.length) { drop.style.display = 'none'; return; }
-  drop.innerHTML = results.slice(0, 6).map(p => `
-    <div class="px-3 py-2 cursor-pointer hover:bg-green-50 border-b border-gray-50 text-xs"
-         onclick="selectProduct(${idx},'${p.id}')">
-      <span class="font-semibold">${p.name}</span>
-      <span class="text-gray-400 ml-2">${p.sku} | ₹${p.unit_price}</span>
-    </div>
-  `).join('');
+  ).slice(0, 8);
+  
+  if (!currentResults.length) { drop.style.display = 'none'; return; }
+  
+  drop.innerHTML = currentResults.map((p, i) => {
+    const qty = p.stock_quantity || 0;
+    let stockClass = 'stock-out', stockLabel = 'Out of Stock';
+    if (qty > 10) { stockClass = 'stock-high'; stockLabel = `In Stock: ${qty}`; }
+    else if (qty > 0) { stockClass = 'stock-low'; stockLabel = `Low Stock: ${qty}`; }
+    
+    return `
+      <div class="dropdown-item ${i === activeIndex ? 'active' : ''}" onclick="selectProduct(${idx},'${p.id}')">
+        <div class="col-main">
+          <div class="flex items-center">
+            <p class="font-bold text-sm tracking-tight" style="color:#003f00; font-family:'Manrope',sans-serif">${p.name}</p>
+            <span class="stock-tag ${stockClass}">${stockLabel}</span>
+          </div>
+          <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">${p.category || 'Product'}</p>
+        </div>
+        <div class="col-sku text-[11px] text-gray-500 font-mono">${p.sku || 'NO-SKU'}</div>
+        <div class="col-price text-xs font-bold text-brand-dark text-right">₹${p.unit_price}</div>
+      </div>
+    `;
+  }).join('');
   drop.style.display = 'block';
 };
 

@@ -78,7 +78,7 @@ export async function generateInvoicePDF(invoiceData, companySettings = {}) {
   doc.setTextColor(...darkGreen);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Invoice No: ${invoiceData.invoice_no || 'INV-202401-0001'}`, 16, y + 2);
+  doc.text(`Invoice No: ${invoiceData.invoice_no || 'INV-' + new Date().getFullYear() + '01-0001'}`, 16, y + 2);
   doc.text(`Date: ${formatDate(invoiceData.invoice_date)}`, 16, y + 8);
   doc.text(`Due Date: ${formatDate(invoiceData.due_date)}`, 16, y + 14);
 

@@ -212,7 +212,8 @@ body {
   background: var(--white);
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  overflow: hidden;
+  /* overflow: hidden; Removed to allow absolute-positioned dropdowns to show */
+  position: relative;
 }
 
 .card-header {
