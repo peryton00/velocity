@@ -2,6 +2,7 @@
  * SHARED UTILITIES
  * Alpha Vector Inventory Management System
  */
+import { checkSession, logout } from './auth.js';
 
 // ── TOAST NOTIFICATIONS ──
 export function showToast(message, type = 'success', duration = 3500) {
@@ -75,18 +76,28 @@ export function validatePAN(pan) {
 }
 
 // ── SIDEBAR ──
-export function initSidebar(activeLink) {
+export function initSidebar(activeLink, basePath = './') {
   const links = document.querySelectorAll('#sidebar nav a');
   links.forEach(link => {
-    if (link.getAttribute('href') === activeLink ||
-        window.location.pathname.endsWith(activeLink)) {
+    const href = link.getAttribute('href') || '';
+    const cleanHref = href.replace(/^(\.\/|\.\.\/)+/, '');
+    const cleanActive = activeLink ? activeLink.replace(/^(\.\/|\.\.\/)+/, '') : '';
+    
+    if (cleanActive && cleanHref === cleanActive) {
       link.classList.add('active');
+    } else if (cleanActive) {
+      link.classList.remove('active');
     }
   });
 
   const hamburger = document.getElementById('hamburger-btn');
   const sidebar   = document.getElementById('sidebar');
   const overlay   = document.getElementById('sidebar-overlay');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => logout(basePath));
+  }
 
   if (hamburger && sidebar) {
     hamburger.addEventListener('click', () => {
@@ -186,6 +197,8 @@ export function getAutosaved(key) {
 
 // ── SIDEBAR HTML TEMPLATE ──
 export function getSidebarHTML(active = '', basePath = './') {
+  checkSession(basePath);
+
   const navItems = [
     { href: `${basePath}index.html`,          icon: 'home',         label: 'Dashboard'  },
     { href: `${basePath}products.html`,        icon: 'package',      label: 'Products'   },
@@ -243,7 +256,9 @@ export function getTopbarHTML(title = '') {
       <div id="connection-badge" class="connection-badge online">
         <span class="connection-dot"></span> Connected
       </div>
-      <div style="width:34px;height:34px;border-radius:50%;background:var(--frost-green);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--dark-green);cursor:pointer">A</div>
+      <div id="logout-btn" style="width:34px;height:34px;border-radius:50%;background:var(--frost-green);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--dark-green);cursor:pointer" title="Sign Out">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
     </div>
   `;
 }

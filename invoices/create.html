@@ -312,20 +312,6 @@ let allProducts  = [];
 let allCustomers = [];
 let invoiceId    = null;
 
-// ── DEMO DATA ──
-const DEMO_CUSTOMERS = [
-  { id:'c1', name:'Sharma Electronics', company_name:'Sharma Electronics Ltd', gstin:'24AADCS1234D1ZT', phone:'9876543210', billing_address:'Shop No 5, MG Road, Ahmedabad 380001', shipping_address:'' },
-  { id:'c2', name:'Patel Distributors',  company_name:'Patel Distributors Pvt Ltd', gstin:'27AADCP5678E2ZS', phone:'9988776655', billing_address:'123 Market St, Mumbai 400001', shipping_address:'' },
-  { id:'c3', name:'Gupta Traders',       company_name:'Gupta Traders',          gstin:'08AADCG9012F3ZR', phone:'9765432109', billing_address:'45 Sanganer Rd, Jaipur 302001', shipping_address:'' }
-];
-
-const DEMO_PRODUCTS = [
-  { id:'p1', sku:'NPK-001', name:'NPK Fertiliser 50kg', hsn_code:'3102', unit_price:1450, gst_rate:5, unit:'Bag' },
-  { id:'p2', sku:'PES-002', name:'Organic Pesticide 5L', hsn_code:'3808', unit_price:1100, gst_rate:18, unit:'Ltr' },
-  { id:'p3', sku:'SED-003', name:'Hybrid Tomato Seeds 500g', hsn_code:'1209', unit_price:520, gst_rate:0, unit:'Kg' },
-  { id:'p4', sku:'IRR-004', name:'Drip Irrigation Kit', hsn_code:'8424', unit_price:5800, gst_rate:12, unit:'Nos' }
-];
-
 // ── Init ──
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('inv-date').value = today;
@@ -342,7 +328,9 @@ async function genInvoiceNo() {
     const no = `INV-${y}${m}-${seq}`;
     document.getElementById('inv-no').value = no;
     document.getElementById('invoice-no-display').textContent = no;
-  } catch {
+  } catch (err) {
+    console.error('Invoice Number Generation failed:', err);
+    // Maintain a fallback ID temporarily just to allow form interaction, but it will be generated correctly on submit usually.
     const no = `INV-${Date.now()}`;
     document.getElementById('inv-no').value = no;
     document.getElementById('invoice-no-display').textContent = no;
@@ -362,15 +350,15 @@ document.getElementById('inv-terms').addEventListener('change', () => {
 async function loadCustomers() {
   try {
     const { data } = await supabase.from('customers').select('*').order('name');
-    allCustomers = data?.length ? data : DEMO_CUSTOMERS;
-  } catch { allCustomers = DEMO_CUSTOMERS; }
+    allCustomers = data || [];
+  } catch (err) { console.error('Customers load failed', err); }
 }
 
 async function loadProducts() {
   try {
     const { data } = await supabase.from('products').select('*').order('name');
-    allProducts = data?.length ? data : DEMO_PRODUCTS;
-  } catch { allProducts = DEMO_PRODUCTS; }
+    allProducts = data || [];
+  } catch (err) { console.error('Products load failed', err); }
 }
 
 loadCustomers();

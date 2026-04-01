@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings | Alpha Vector IMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062', 'on-surface':'#1a1c19', 'on-surface-variant':'#40493c', 'surface-lowest':'#ffffff', 'surface-low':'#f4f4ee'}}}}</script>
+  <style>
+    .tab-btn {
+      color: var(--on-surface-variant, #40493c);
+      padding: 0.75rem 1.5rem;
+      border-bottom: 2px solid transparent;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--dark-green, #005900); }
+    .tab-btn.active {
+      color: var(--dark-green, #005900);
+      border-bottom: 2px solid var(--fir-green, #059100);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .role-badge { px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide text-white; display: inline-block; }
+    .badge-admin { background-color: #005900; }
+    .badge-sales { background-color: #059100; }
+    .badge-inventory { background-color: #A8C084; color:#005900; }
+  </style>
+  <link rel="stylesheet" href="assets/css/custom.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside id="sidebar"></aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<header id="topbar"></header>
+<div id="toast-container"></div>
+
+<main id="main-content">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-8">
+    <div>
+      <h1 class="text-2xl font-bold" style="color:#005900; font-family: Manrope, sans-serif">Settings</h1>
+      <p class="text-sm mt-1" style="color:#40493c">Manage system preferences and organization details</p>
+    </div>
+  </div>
+
+  <!-- Settings Container -->
+  <div class="card p-0 overflow-hidden" style="background:#ffffff; border:none; border-radius:12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+    
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap border-b border-gray-100 bg-[#f4f4ee] px-4 pt-2">
+      <button class="tab-btn active" data-target="tab-company">Company Info</button>
+      <button class="tab-btn" data-target="tab-tax">Tax Settings</button>
+      <button class="tab-btn" data-target="tab-users">Users</button>
+      <button class="tab-btn" data-target="tab-backup">Backup</button>
+    </div>
+
+    <!-- Tab Panels -->
+    <div class="p-6 md:p-8">
+      
+      <!-- 1. Company Info Tab -->
+      <div id="tab-company" class="tab-content active space-y-8">
+        <!-- Logo Upload -->
+        <div>
+          <h3 class="text-lg font-bold mb-4" style="color:#005900">Brand Identity</h3>
+          <div class="flex items-center gap-6">
+            <div class="w-24 h-24 rounded-lg bg-[#f4f4ee] border border-gray-200 flex items-center justify-center overflow-hidden">
+               <span class="text-2xl">🌿</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-center border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:bg-[#f4f4ee]/50 cursor-pointer" style="border-color:#A8C084">
+               <svg class="mx-auto h-8 w-8 text-[#A8C084]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+               </svg>
+               <p class="mt-2 text-sm text-[#40493c]">Drag & drop logo here, or <span class="font-bold underline" style="color:#059100">browse</span></p>
+               <p class="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-100" />
+
+        <!-- Legal Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">GSTIN</label>
+            <input type="text" class="form-input w-full" value="27AADCB2230M1Z2" placeholder="Ex: 22AAAAA0000A1Z5">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">PAN</label>
+            <input type="text" class="form-input w-full" value="AADCB2230M" placeholder="Ex: ABCDE1234F">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">Registered Address</label>
+            <textarea class="form-input w-full" rows="3">123 Green Valley Estate, Phase 4, Bangalore, 560001</textarea>
+          </div>
+        </div>
+
+        <hr class="border-gray-100" />
+
+        <!-- Bank Details for Invoices -->
+        <div>
+          <h3 class="text-lg font-bold mb-4" style="color:#005900">Bank Details for Invoices</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-semibold mb-2" style="color:#40493c">Account Name</label>
+              <input type="text" class="form-input w-full" value="Alpha Vector Pvt Ltd">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2" style="color:#40493c">Bank Name</label>
+              <input type="text" class="form-input w-full" value="HDFC Bank">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2" style="color:#40493c">Account Number</label>
+              <input type="text" class="form-input w-full" value="50200012344567">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2" style="color:#40493c">IFSC Code</label>
+              <input type="text" class="form-input w-full" value="HDFC0001234">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+           <button class="btn btn-primary" onclick="window.saveSettings()">Save Configuration</button>
+        </div>
+      </div>
+
+      <!-- 2. Tax Settings Tab -->
+      <div id="tab-tax" class="tab-content space-y-8">
+        <div>
+           <h3 class="text-lg font-bold mb-1" style="color:#005900">Default Tax Rates</h3>
+           <p class="text-sm text-gray-500 mb-6">Pre-fill these rates when creating new products or invoices.</p>
+           
+           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div>
+               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Default CGST (%)</label>
+               <input type="number" class="form-input w-full" value="9">
+             </div>
+             <div>
+               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Default SGST (%)</label>
+               <input type="number" class="form-input w-full" value="9">
+             </div>
+             <div>
+               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Default IGST (%)</label>
+               <input type="number" class="form-input w-full" value="18">
+             </div>
+           </div>
+        </div>
+
+        <hr class="border-gray-100" />
+
+        <!-- Tax Toggles -->
+        <div>
+           <h3 class="text-lg font-bold mb-4" style="color:#005900">Advanced Withholding (TCS/TDS)</h3>
+           <div class="space-y-4">
+             <label class="flex items-center justify-between p-4 bg-[#f4f4ee] rounded-lg cursor-pointer transition-colors hover:bg-[#e8e8e3]">
+               <div>
+                 <p class="font-bold" style="color:#1a1c19">Enable TCS Collection</p>
+                 <p class="text-sm text-gray-500">Collect Tax at Source on applicable invoices</p>
+               </div>
+               <input type="checkbox" class="w-5 h-5 rounded text-[#059100] focus:ring-[#005900]" checked>
+             </label>
+
+             <label class="flex items-center justify-between p-4 bg-[#f4f4ee] rounded-lg cursor-pointer transition-colors hover:bg-[#e8e8e3]">
+               <div>
+                 <p class="font-bold" style="color:#1a1c19">Enable TDS Deductions</p>
+                 <p class="text-sm text-gray-500">Allow customers to deduct Tax Deducted at Source</p>
+               </div>
+               <input type="checkbox" class="w-5 h-5 rounded text-[#059100] focus:ring-[#005900]">
+             </label>
+           </div>
+        </div>
+        
+        <div class="flex justify-end pt-4">
+           <button class="btn btn-primary" onclick="window.saveSettings()">Save Tax Preferences</button>
+        </div>
+      </div>
+
+      <!-- 3. Users Tab -->
+      <div id="tab-users" class="tab-content space-y-6">
+        <div class="flex items-center justify-between">
+           <div>
+             <h3 class="text-lg font-bold mb-1" style="color:#005900">User Management</h3>
+             <p class="text-sm text-gray-500">Invite team members and manage role-based access.</p>
+           </div>
+           <!-- explicitly styled Fir Green as requested -->
+           <button class="px-4 py-2 font-bold text-sm text-white rounded shadow transition-transform hover:scale-105" style="background-color:#059100">
+             + Invite User
+           </button>
+        </div>
+
+        <div class="overflow-x-auto border border-gray-100 mt-4" style="border-radius:8px">
+          <table class="data-table w-full text-left">
+            <thead class="bg-[#f4f4ee] text-xs uppercase" style="color:#40493c">
+              <tr>
+                <th class="px-6 py-3">User</th>
+                <th class="px-6 py-3">Role</th>
+                <th class="px-6 py-3">Last Active</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+              <tr>
+                <td class="px-6 py-4">
+                  <p class="font-bold text-[#1a1c19]">Vikram Mehta</p>
+                  <p class="text-xs text-gray-500">vikram@alphavector.com</p>
+                </td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-white" style="background-color:#005900">Admin</span></td>
+                <td class="px-6 py-4 text-sm text-gray-500">Active Now</td>
+                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4">
+                  <p class="font-bold text-[#1a1c19]">Sara Ali</p>
+                  <p class="text-xs text-gray-500">sara.sales@alphavector.com</p>
+                </td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-white" style="background-color:#059100">Sales</span></td>
+                <td class="px-6 py-4 text-sm text-gray-500">2 hours ago</td>
+                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4">
+                  <p class="font-bold text-[#1a1c19]">Ravi Kumar</p>
+                  <p class="text-xs text-gray-500">inventory@alphavector.com</p>
+                </td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase" style="background-color:#A8C084; color:#005900">Inventory</span></td>
+                <td class="px-6 py-4 text-sm text-gray-500">Yesterday</td>
+                <td class="px-6 py-4 text-right"><button class="text-gray-400 hover:text-[#005900] underline text-sm">Edit</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. Backup Tab -->
+      <div id="tab-backup" class="tab-content">
+        <div class="text-center py-16">
+           <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+           </svg>
+           <h3 class="text-xl font-bold mb-2" style="color:#005900">Data Export & Backup</h3>
+           <p class="text-gray-500 max-w-md mx-auto mb-8">Securely download a complete archive of your inventory, customer records, and invoice history as a compressed CSV bundle.</p>
+           <button class="btn btn-outline border-2 border-[#A8C084] text-[#005900] hover:bg-[#A8C084] hover:text-white transition-colors" onclick="window.saveSettings()">Generate Backup</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+  import { initSidebar, getSidebarHTML, getTopbarHTML, showToast } from './assets/js/utils.js';
+  
+  // Inject navigation elements
+  document.getElementById('sidebar').innerHTML = getSidebarHTML('Settings', './');
+  document.getElementById('topbar').innerHTML = getTopbarHTML('Settings', './');
+  initSidebar('settings.html', './');
+
+  // Tab switching logic
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // remove active classes
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+      
+      // add active classes
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+
+  // Global save mock
+  window.saveSettings = function() {
+    showToast('Settings saved successfully!', 'success');
+  }
+</script>
+
+</body>
+</html>

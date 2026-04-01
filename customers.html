@@ -236,14 +236,6 @@ document.getElementById('topbar').innerHTML  = getTopbarHTML('Customers');
 initSidebar('customers.html');
 applyChartDefaults();
 
-const DEMO_CUSTOMERS = [
-  { id:'c1', name:'Ramesh Sharma',    company_name:'Sharma Electronics Ltd', gstin:'24AADCS1234D1ZT', pan:'AADCS1234D', phone:'9876543210', email:'ramesh@sharma.com', billing_address:'Shop No 5, MG Road, Ahmedabad 380001', credit_limit:500000, outstanding_balance:58420, total_purchases:384500 },
-  { id:'c2', name:'Priya Patel',      company_name:'Patel Distributors Pvt Ltd', gstin:'27AADCP5678E2ZS', pan:'AADCP5678E', phone:'9988776655', email:'priya@patel.com', billing_address:'123 Market St, Mumbai 400001', credit_limit:1000000, outstanding_balance:0, total_purchases:895200 },
-  { id:'c3', name:'Anil Gupta',       company_name:'Gupta Traders',          gstin:'08AADCG9012F3ZR', pan:'AADCG9012F', phone:'9765432109', email:'anil@gupta.in', billing_address:'45 Sanganer Rd, Jaipur 302001', credit_limit:200000, outstanding_balance:37800, total_purchases:216400 },
-  { id:'c4', name:'Sunita Verma',     company_name:'Verma Supplies',         gstin:'09AADCV3456G4ZQ', pan:'AADCV3456G', phone:'9654321098', email:'sunita@verma.com', billing_address:'78 Civil Lines, Lucknow 226001', credit_limit:300000, outstanding_balance:0, total_purchases:452100 },
-  { id:'c5', name:'Rakesh Mehta',     company_name:'Mehta Wholesale',        gstin:'29AADCM7890H5ZP', pan:'AADCM7890H', phone:'9543210987', email:'rakesh@mehta.co', billing_address:'Plot 12, KIADB, Bengaluru 560058', credit_limit:750000, outstanding_balance:215630, total_purchases:1230000 }
-];
-
 let allCustomers = [];
 let filteredCustomers = [];
 let currentPage = 1;
@@ -253,8 +245,11 @@ let activeCustomer = null;
 async function loadCustomers() {
   try {
     const { data } = await supabase.from('customers').select('*').order('name');
-    allCustomers = data?.length ? data : DEMO_CUSTOMERS;
-  } catch { allCustomers = DEMO_CUSTOMERS; }
+    allCustomers = data || [];
+  } catch(err) { 
+    console.error('Failed to load customers:', err); 
+    allCustomers = [];
+  }
   updateStats();
   applyFilters();
 }
@@ -526,16 +521,8 @@ window.saveCustomer = async () => {
     }
     updateStats(); applyFilters();
     document.getElementById('customer-modal').classList.remove('open');
-  } catch {
-    if (id) {
-      const idx = allCustomers.findIndex(c => c.id === id);
-      if (idx !== -1) allCustomers[idx] = { ...allCustomers[idx], ...custData };
-    } else {
-      allCustomers.unshift({ ...custData, id: 'demo-'+Date.now(), total_purchases:0 });
-    }
-    updateStats(); applyFilters();
-    document.getElementById('customer-modal').classList.remove('open');
-    showToast(id ? 'Customer updated (demo)' : 'Customer added (demo)', 'info');
+  } catch (err) {
+    showToast(err.message || 'Verification failed', 'error');
   } finally {
     setLoading(btn, false);
   }

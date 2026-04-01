@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(250, 250, 244, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+    </style>
+<link rel="stylesheet" href="assets/css/custom.css"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#1e6d16",
+                        "on-secondary-container": "#047500",
+                        "surface-dim": "#dadad5",
+                        "outline-variant": "#c0cab8",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#2f312e",
+                        "on-secondary-fixed-variant": "#025300",
+                        "on-secondary-fixed": "#002200",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e8e8e3",
+                        "tertiary-fixed": "#ffd8e6",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#40493c",
+                        "inverse-on-surface": "#f1f1ec",
+                        "on-primary-fixed-variant": "#005300",
+                        "primary-fixed": "#a4f78f",
+                        "tertiary-container": "#872459",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fafaf4",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eeeee9",
+                        "on-background": "#1a1c19",
+                        "inverse-primary": "#89da75",
+                        "primary-fixed-dim": "#89da75",
+                        "on-tertiary-fixed-variant": "#811f54",
+                        "surface-container-low": "#f4f4ee",
+                        "secondary-fixed": "#84fd6d",
+                        "primary": "#003f00",
+                        "tertiary": "#690741",
+                        "surface-variant": "#e3e3de",
+                        "on-primary-fixed": "#002200",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#005900",
+                        "tertiary-fixed-dim": "#ffb0d0",
+                        "outline": "#707a6b",
+                        "surface-container-highest": "#e3e3de",
+                        "secondary": "#036e00",
+                        "on-tertiary-container": "#ff9fc8",
+                        "secondary-container": "#84fd6d",
+                        "surface-bright": "#fafaf4",
+                        "on-primary-container": "#7fcf6c",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#3d0024",
+                        "on-surface": "#1a1c19",
+                        "background": "#fafaf4",
+                        "secondary-fixed-dim": "#68e054"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<!-- As per Shell Visibility Rule: Login page usually suppresses nav, but request explicitly asked to apply branding using TopNavBar -->
+<header class="fixed top-0 w-full bg-stone-50/70 dark:bg-stone-950/70 backdrop-blur-xl z-50 shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center px-12 py-4 w-full">
+<div class="text-2xl font-bold tracking-tighter text-emerald-900 dark:text-emerald-400 font-headline">
+                Alpha Vector
+            </div>
+<nav class="hidden md:flex items-center gap-8 font-manrope tracking-tight">
+<a class="text-stone-500 dark:text-stone-400 hover:text-emerald-700 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors px-3 py-1 rounded-sm" href="#">Contact Support</a>
+<a class="text-stone-500 dark:text-stone-400 hover:text-emerald-700 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors px-3 py-1 rounded-sm" href="#">Help Center</a>
+<div class="flex items-center gap-2 text-emerald-900 dark:text-emerald-500 text-sm font-semibold ml-4">
+<span class="material-symbols-outlined text-sm">sensors</span>
+                    System Status
+                </div>
+</nav>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow relative flex items-center justify-center p-6 bg-gradient-to-br from-surface via-surface-container-low to-[#e0ede0]">
+<!-- Background decorative elements -->
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute -top-[20%] -left-[10%] w-[50%] h-[60%] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute -bottom-[20%] -right-[10%] w-[40%] h-[50%] bg-secondary/5 blur-[100px] rounded-full"></div>
+</div>
+<!-- Login Container -->
+<section class="relative z-10 w-full max-w-[480px]">
+<div class="glass-panel p-10 md:p-14 rounded-xl shadow-[0_32px_64px_-12px_rgba(26,28,25,0.06)] border border-white/20">
+<div class="mb-10">
+<h1 class="font-headline text-[3.5rem] leading-[1.1] font-extrabold tracking-tighter text-primary mb-2">
+                        Welcome back
+                    </h1>
+<p class="text-on-surface-variant font-medium tracking-wide">
+                        ACCESS THE ARBORETUM ARCHIVE
+                    </p>
+</div>
+<form id="login-form" class="space-y-8">
+<!-- Email Input Group -->
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold uppercase tracking-widest text-on-surface-variant ml-1" for="email">
+                            Identification
+                        </label>
+<div class="relative group">
+<input class="w-full h-14 bg-surface-container-high border-none rounded-sm px-4 pt-1 font-body text-on-surface placeholder:text-stone-400 focus:ring-0 transition-all border-b-2 border-transparent focus:border-primary" id="email" placeholder="Email Address" type="email" required/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="alternate_email">alternate_email</span>
+</div>
+</div>
+</div>
+<!-- Password Input Group -->
+<div class="space-y-2">
+<div class="flex justify-between items-end px-1">
+<label class="font-label text-xs font-semibold uppercase tracking-widest text-on-surface-variant" for="password">
+                                Security Key
+                            </label>
+<a class="text-xs font-semibold text-primary hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">
+                                Forgot password
+                            </a>
+</div>
+<div class="relative group">
+<input class="w-full h-14 bg-surface-container-high border-none rounded-sm px-4 pt-1 font-body text-on-surface placeholder:text-stone-400 focus:ring-0 transition-all border-b-2 border-transparent focus:border-primary" id="password" placeholder="Password" type="password" required/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+</div>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center gap-3 px-1">
+<input class="w-5 h-5 rounded-sm border-stone-300 text-primary focus:ring-primary-container" id="remember" type="checkbox"/>
+<label class="font-body text-sm text-on-surface-variant cursor-pointer select-none" for="remember">
+                            Keep session active
+                        </label>
+</div>
+<!-- Submit Action -->
+<button id="login-btn" class="w-full h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary font-label font-bold text-sm uppercase tracking-[0.2em] rounded-sm shadow-xl shadow-primary/10 hover:shadow-primary/20 hover:scale-[0.98] transition-all duration-200" type="submit">
+                        Authorize Access
+                    </button>
+</form>
+<div class="mt-12 pt-8 border-t border-outline-variant/15 flex flex-col items-center gap-4">
+<p class="text-xs text-on-surface-variant/60 font-medium">NEW TO THE SYSTEM?</p>
+<button class="px-6 py-2 bg-surface-container-high text-on-surface font-label text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-surface-container-highest transition-colors">
+                        Request Credentials
+                    </button>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+</div>
+</section>
+<!-- Decorative Image/Visual -->
+<div class="hidden xl:block absolute right-16 top-1/2 -translate-y-1/2 w-[30vw] h-[716px] rounded-2xl overflow-hidden shadow-2xl">
+<img class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="Abstract macro shot of a green leaf showing intricate cellular patterns with soft sunlight diffusing through organic textures" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSthzYeE5jM3KZddJ1Dss9-zxXVk6tkLxCJaP70wfy9zlkBc-gBBiZkzCwPVppa47NwByORXyaleIYApsSNtw2WeO9F8wGpE9S2vQUAX3oyApUs43ALQ7fO7Nn-mWmL_o73540LgYV45WbD6-3vl-9rKC22_hb6Ebu2LiLsdlfYMe1c4ncR59cI4bc2wJLFx3ybwWCmhM_fBeclvHt3rdViclzpv5CjrZU-NnGzBWqfufC5NUVWID9mwr8XqVPMS-qBvLNVLEeDdU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="fixed bottom-0 w-full bg-transparent flex justify-center gap-8 pb-8 w-full font-inter text-xs tracking-wide uppercase text-emerald-900 dark:text-emerald-500 opacity-80">
+<span class="text-stone-400 dark:text-stone-600">© 2024 Alpha Vector Arboretum Archive. All rights reserved.</span>
+<div class="flex gap-8">
+<a class="text-stone-400 dark:text-stone-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-opacity" href="#">Privacy Policy</a>
+<a class="text-stone-400 dark:text-stone-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-opacity" href="#">Terms of Service</a>
+<a class="text-stone-400 dark:text-stone-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-opacity" href="#">Security</a>
+</div>
+</footer>
+<script type="module">
+  import { checkSession, login } from './assets/js/auth.js';
+  
+  // Will redirect to index.html if already logged in
+  checkSession('./');
+
+  document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const pass = document.getElementById('password').value;
+      login(email, pass, './');
+  });
+</script>
+</body></html>

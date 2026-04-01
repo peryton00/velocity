@@ -221,72 +221,36 @@ async function bootstrap() {
   }
 }
 
-// ── DEMO / FALLBACK DATA (shown when Supabase not configured) ──
-const DEMO = {
-  todaySales: 148250.50,
-  pendingOrders: 7,
-  lowStockCount: 4,
-  outstandingPayments: 385400.00,
-  salesLabels: (() => {
-    const labels = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      labels.push(d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }));
-    }
-    return labels;
-  })(),
-  salesData: Array.from({ length: 30 }, () => Math.floor(Math.random() * 80000) + 20000),
-  invoices: [
-    { invoice_no: 'INV-202401-0042', customer_name: 'Sharma Electronics', invoice_date: '2024-01-15', total: 58420.00, status: 'paid' },
-    { invoice_no: 'INV-202401-0041', customer_name: 'Patel Distributors',  invoice_date: '2024-01-14', total: 124500.50, status: 'pending' },
-    { invoice_no: 'INV-202401-0040', customer_name: 'Gupta Traders',       invoice_date: '2024-01-13', total: 37800.00, status: 'overdue' },
-    { invoice_no: 'INV-202401-0039', customer_name: 'Verma Supplies',      invoice_date: '2024-01-12', total: 95200.00, status: 'paid' },
-    { invoice_no: 'INV-202401-0038', customer_name: 'Mehta Wholesale',     invoice_date: '2024-01-11', total: 215630.00, status: 'pending' },
-    { invoice_no: 'INV-202401-0037', customer_name: 'Singh Brothers',      invoice_date: '2024-01-10', total: 42100.00, status: 'paid' }
-  ],
-  lowStock: [
-    { name: 'Organic Pesticide 5L', current_stock: 3, min_stock_alert: 20, sku: 'SKU-001' },
-    { name: 'NPK Fertiliser 50kg', current_stock: 7, min_stock_alert: 25, sku: 'SKU-002' },
-    { name: 'Drip Irrigation Kit', current_stock: 2, min_stock_alert: 10, sku: 'SKU-003' },
-    { name: 'Urea 45kg Bag',        current_stock: 9, min_stock_alert: 30, sku: 'SKU-004' }
-  ],
-  categories: {
-    labels: ['Fertilisers','Pesticides','Seeds','Equipment','Irrigation'],
-    data: [35, 20, 18, 12, 15]
-  }
-};
-
 // ── Load Metrics ──
 async function loadMetrics() {
   try {
     const stats = await getDashboardStats();
     renderMetrics(stats);
-  } catch {
-    renderMetrics({
-      todaySales: DEMO.todaySales,
-      pendingOrders: DEMO.pendingOrders,
-      lowStockCount: DEMO.lowStockCount,
-      outstandingPayments: DEMO.outstandingPayments
-    });
+  } catch (err) {
+    console.error('Failed to load metrics:', err);
   }
 }
 
 function renderMetrics(stats) {
-  document.getElementById('metric-sales').textContent = fmtCurrency(stats.todaySales);
-  document.getElementById('metric-orders').textContent = stats.pendingOrders;
-  document.getElementById('metric-lowstock').textContent = stats.lowStockCount;
-  document.getElementById('metric-outstanding').textContent = fmtCurrency(stats.outstandingPayments);
+  document.getElementById('metric-sales').textContent = fmtCurrency(stats.todaySales || 0);
+  document.getElementById('metric-orders').textContent = stats.pendingOrders || 0;
+  document.getElementById('metric-lowstock').textContent = stats.lowStockCount || 0;
+  document.getElementById('metric-outstanding').textContent = fmtCurrency(stats.outstandingPayments || 0);
 }
 
 // ── Load Sales Chart ──
 async function loadSalesChart(type = 'line') {
-  let labels = DEMO.salesLabels;
-  let data   = DEMO.salesData;
+  let labels = [];
+  let data   = [];
   try {
     const res = await getSalesChartData();
-    labels = res.labels;
-    data   = res.data;
-  } catch { /* use demo */ }
+    if (res) {
+      labels = res.labels;
+      data   = res.data;
+    }
+  } catch (err) { 
+    console.error('Failed to load chart data:', err);
+  }
 
   const existing = Chart.getChart('salesChart');
   if (existing) existing.destroy();
@@ -358,10 +322,10 @@ if (lineBtn && barBtn) {
 
 // ── Load Recent Invoices ──
 async function loadRecentInvoices() {
-  let invoices = DEMO.invoices;
+  let invoices = [];
   try {
     const res = await supabase.from('invoices')
-      .select('invoice_no, invoice_date, total, status, customers(name,company_name)')
+      .select('id, invoice_no, invoice_date, total, status, customers(name,company_name)')
       .order('created_at', { ascending: false }).limit(6);
     if (res.data && res.data.length) {
       invoices = res.data.map(inv => ({
@@ -369,7 +333,9 @@ async function loadRecentInvoices() {
         customer_name: inv.customers?.company_name || inv.customers?.name || '—'
       }));
     }
-  } catch { /* use demo */ }
+  } catch (err) {
+    console.error('Failed to load invoices:', err);
+  }
 
   const tbody = document.getElementById('recent-invoices-body');
   if (!tbody) return;
@@ -401,14 +367,16 @@ async function loadRecentInvoices() {
 
 // ── Load Low Stock ──
 async function loadLowStock() {
-  let items = DEMO.lowStock;
+  let items = [];
   try {
     const { data } = await supabase.from('products').select('*').order('current_stock', { ascending: true }).limit(8);
     if (data && data.length) {
       items = data.filter(p => p.current_stock < (p.min_stock_alert || 10));
       if (!items.length) items = data.slice(0, 4);
     }
-  } catch { /* use demo */ }
+  } catch (err) {
+    console.error('Failed to load low stock items:', err);
+  }
 
   const el = document.getElementById('low-stock-list');
   if (!el) return;
@@ -435,8 +403,8 @@ async function loadLowStock() {
 
 // ── Category Chart ──
 async function loadCategoryChart() {
-  let labels = DEMO.categories.labels;
-  let data   = DEMO.categories.data;
+  let labels = [];
+  let data   = [];
   try {
     const { data: prods } = await supabase.from('products').select('category');
     if (prods && prods.length) {
@@ -445,7 +413,9 @@ async function loadCategoryChart() {
       labels = Object.keys(counts);
       data   = Object.values(counts);
     }
-  } catch { /* use demo */ }
+  } catch (err) {
+    console.error('Failed to load category chart:', err);
+  }
 
   createCategoryPieChart('categoryChart', labels, data);
 }

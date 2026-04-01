@@ -293,24 +293,17 @@ const PAGE_SIZE = 15;
 let currentView = 'table';
 let deleteId    = null;
 
-// ── DEMO DATA ──
-const DEMO_PRODUCTS = [
-  { id:'d1', sku:'NPK-001', hsn_code:'3102', name:'NPK Fertiliser 50kg Bag', brand:'Tata Chemicals', category:'Fertilisers', unit:'Bag', purchase_price:1200, unit_price:1450, gst_rate:5, current_stock:42, min_stock_alert:20 },
-  { id:'d2', sku:'PES-002', hsn_code:'3808', name:'Organic Pesticide 5L',    brand:'Bayer CropScience', category:'Pesticides', unit:'Ltr', purchase_price:850, unit_price:1100, gst_rate:18, current_stock:7,  min_stock_alert:15 },
-  { id:'d3', sku:'SED-003', hsn_code:'1209', name:'Hybrid Tomato Seeds 500g', brand:'Mahyco',           category:'Seeds',       unit:'Kg',  purchase_price:380, unit_price:520,  gst_rate:0,  current_stock:28, min_stock_alert:10 },
-  { id:'d4', sku:'IRR-004', hsn_code:'8424', name:'Drip Irrigation Kit 1ac', brand:'Netafim',           category:'Irrigation',  unit:'Nos', purchase_price:4200, unit_price:5800, gst_rate:12, current_stock:3,  min_stock_alert:5 },
-  { id:'d5', sku:'URE-005', hsn_code:'3102', name:'Urea 45kg Bag',           brand:'IFFCO',             category:'Fertilisers', unit:'Bag', purchase_price:320, unit_price:410,  gst_rate:5,  current_stock:9,  min_stock_alert:25 },
-  { id:'d6', sku:'FUN-006', hsn_code:'3808', name:'Fungicide Mancozeb 1kg',  brand:'Syngenta',          category:'Pesticides',  unit:'Kg',  purchase_price:210, unit_price:290,  gst_rate:18, current_stock:55, min_stock_alert:15 },
-  { id:'d7', sku:'SPR-007', hsn_code:'8424', name:'Knapsack Sprayer 16L',    brand:'Venus',             category:'Equipment',   unit:'Nos', purchase_price:680, unit_price:950,  gst_rate:12, current_stock:18, min_stock_alert:8 },
-  { id:'d8', sku:'POT-008', hsn_code:'3104', name:'Potash Muriate 50kg',     brand:'IPL',               category:'Fertilisers', unit:'Bag', purchase_price:890, unit_price:1150, gst_rate:5,  current_stock:34, min_stock_alert:20 }
-];
+
 
 // ── Load Products ──
 async function loadProducts() {
   try {
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    allProducts = (error || !data?.length) ? DEMO_PRODUCTS : data;
-  } catch { allProducts = DEMO_PRODUCTS; }
+    allProducts = data || [];
+  } catch (err) { 
+    console.error("Failed to load products: ", err);
+    allProducts = []; 
+  }
   updateStats();
   applyFilters();
 }
@@ -572,15 +565,7 @@ window.saveProduct = async () => {
     applyFilters();
     closeProductModal();
   } catch (err) {
-    // Demo mode: update locally
-    if (id) {
-      const idx = allProducts.findIndex(p => p.id === id);
-      if (idx !== -1) allProducts[idx] = { ...allProducts[idx], ...productData };
-    } else {
-      allProducts.unshift({ ...productData, id: 'demo-' + Date.now() });
-    }
-    updateStats(); applyFilters(); closeProductModal();
-    showToast(id ? 'Product updated (demo mode)' : 'Product added (demo mode)', 'info');
+    showToast(err.message || 'Verification failed', 'error');
   } finally {
     setLoading(btn, false);
   }
@@ -595,8 +580,12 @@ window.confirmDelete = (id, name, sku) => {
 document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
   if (!deleteId) return;
   try {
-    await supabase.from('products').delete().eq('id', deleteId);
-  } catch { /* demo fallback */ }
+    const { error } = await supabase.from('products').delete().eq('id', deleteId);
+    if (error) throw error;
+  } catch (err) {
+    showToast(err.message || 'Deletion failed', 'error');
+    return;
+  }
   allProducts = allProducts.filter(p => p.id !== deleteId);
   updateStats(); applyFilters();
   document.getElementById('delete-modal').classList.remove('open');
