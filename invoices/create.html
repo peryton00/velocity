@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Create Invoice | Alpha Vector IMS</title>
+  <title>Create Invoice | VELOCITY CYCLES IMS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -45,7 +45,7 @@
       </button>
       <button id="btn-pdf" class="btn btn-primary">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Generate PDF
+        Download Professional PDF
       </button>
     </div>
   </div>
@@ -104,6 +104,26 @@
                 <option value="inter">Inter-State (IGST)</option>
               </select>
             </div>
+            <div class="form-group">
+              <label class="form-label">Sale Type</label>
+              <select id="inv-sale-type" class="form-select">
+                <option value="B2B">B2B (GST Registered)</option>
+                <option value="B2C">B2C (Consumer)</option>
+                <option value="Export">Export</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Packing List No</label>
+              <input type="text" id="inv-packing-no" class="form-input" placeholder="e.g. PK-1234"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">PO Number</label>
+              <input type="text" id="inv-po-no" class="form-input" placeholder="Customer PO No"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">PO Date</label>
+              <input type="date" id="inv-po-date" class="form-input"/>
+            </div>
           </div>
         </div>
       </div>
@@ -160,12 +180,13 @@
             <thead>
               <tr>
                 <th style="width:36px">#</th>
-                <th>Product / Description</th>
+                <th>Description</th>
                 <th style="width:80px">HSN</th>
+                <th style="width:80px">Brand</th>
                 <th style="width:60px">Qty</th>
+                <th style="width:60px">UOM</th>
                 <th style="width:90px">Rate (₹)</th>
                 <th style="width:70px">GST%</th>
-                <th style="width:80px">Disc%</th>
                 <th style="width:100px">Amount</th>
                 <th style="width:36px"></th>
               </tr>
@@ -276,16 +297,16 @@
 
           <!-- Action Buttons -->
           <div class="flex flex-col gap-2">
-            <button id="btn-pdf-2" class="btn btn-primary w-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Generate PDF
+            <button id="btn-pdf-2" class="btn btn-primary w-full" style="padding: 14px; font-weight: 800;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              GENERATE PROFESSIONAL INVOICE
             </button>
             <button id="btn-save-2" class="btn btn-dark w-full">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               Save Invoice
             </button>
             <button id="btn-draft-2" class="btn btn-frost w-full">Save as Draft</button>
-            <button onclick="window.print()" class="btn btn-outline btn-sm w-full no-print">🖨️ Print</button>
+            <button onclick="window.print()" class="btn btn-outline btn-sm w-full no-print" style="opacity: 0.6; font-size: 10px;">🖨️ Print Page Draft (Browser Print)</button>
           </div>
         </div>
       </div>
@@ -465,6 +486,7 @@ function addRow(product = null) {
     sku:        product?.sku || '',
     name:       product?.name || '',
     hsn_code:   product?.hsn_code || '',
+    brand:      product?.brand || '',
     unit:       product?.unit || 'Nos',
     quantity:   1,
     unit_price: product?.unit_price || 0,
@@ -495,22 +517,31 @@ function renderItems() {
       <td>
         <div style="position:relative">
           <input type="text" class="form-input item-name" data-idx="${i}" value="${item.name}"
-            placeholder="Search product…" autocomplete="off"
-            oninput="searchProduct(${i}, this.value)"
+            placeholder="Product name…" autocomplete="off"
+            oninput="updateField(${i},'name',this.value); searchProduct(${i}, this.value)"
             onkeydown="handleSearchKeydown(event, 'prod', ${i})"
             style="font-size:12px;padding:6px 8px"/>
           <div id="prod-drop-${i}" class="premium-dropdown" style="display:none; left:0; right:0;"></div>
         </div>
       </td>
       <td><input type="text" class="form-input" value="${item.hsn_code}" oninput="updateField(${i},'hsn_code',this.value)" style="font-size:12px;padding:6px 8px;width:70px"/></td>
+      <td><input type="text" class="form-input" value="${item.brand}" oninput="updateField(${i},'brand',this.value)" style="font-size:12px;padding:6px 8px;width:75px"/></td>
       <td><input type="number" class="form-input" value="${item.quantity}" min="1" oninput="updateField(${i},'quantity',parseFloat(this.value)||1)" style="font-size:12px;padding:6px 8px;width:55px"/></td>
+      <td>
+        <select class="form-select" onchange="updateField(${i},'unit',this.value)" style="font-size:12px;padding:5px;width:65px">
+          <option value="Nos" ${item.unit=='Nos'?'selected':''}>Nos</option>
+          <option value="Kgs" ${item.unit=='Kgs'?'selected':''}>Kgs</option>
+          <option value="Pcs" ${item.unit=='Pcs'?'selected':''}>Pcs</option>
+          <option value="Sets" ${item.unit=='Sets'?'selected':''}>Sets</option>
+          <option value="Mtr" ${item.unit=='Mtr'?'selected':''}>Mtr</option>
+        </select>
+      </td>
       <td><input type="number" class="form-input" value="${item.unit_price}" min="0" step="0.01" oninput="updateField(${i},'unit_price',parseFloat(this.value)||0)" style="font-size:12px;padding:6px 8px;width:85px"/></td>
       <td>
         <select class="form-select" onchange="updateField(${i},'gst_rate',parseFloat(this.value))" style="font-size:12px;padding:5px;width:65px">
           ${[0,5,12,18,28].map(r=>`<option value="${r}" ${item.gst_rate==r?'selected':''}>${r}%</option>`).join('')}
         </select>
       </td>
-      <td><input type="number" class="form-input" value="${item.discount}" min="0" max="100" step="0.5" oninput="updateField(${i},'discount',parseFloat(this.value)||0)" style="font-size:12px;padding:6px 8px;width:65px"/></td>
       <td class="font-semibold text-sm" style="color:#005900;white-space:nowrap">
         ${fmtCurrency(item.total_amount)}
       </td>
@@ -559,7 +590,7 @@ window.searchProduct = (idx, query) => {
 window.selectProduct = (idx, productId) => {
   const p = allProducts.find(x => x.id === productId);
   if (!p) return;
-  lineItems[idx] = { ...lineItems[idx], product_id: p.id, sku: p.sku, name: p.name, hsn_code: p.hsn_code||'', unit: p.unit||'Nos', unit_price: p.unit_price, gst_rate: p.gst_rate };
+  lineItems[idx] = { ...lineItems[idx], product_id: p.id, sku: p.sku, name: p.name, hsn_code: p.hsn_code||'', brand: p.brand||'', unit: p.unit||'Nos', unit_price: p.unit_price, gst_rate: p.gst_rate };
   calcRowAmount(idx);
   renderItems();
   recalc();
@@ -640,6 +671,11 @@ async function generatePDF() {
     due_date:      document.getElementById('inv-due').value,
     payment_term:  document.getElementById('inv-terms').value,
     place_of_supply: document.getElementById('inv-pos').value,
+    gst_type:      document.getElementById('inv-gst-type').value,
+    sale_type:     document.getElementById('inv-sale-type').value,
+    packing_no:    document.getElementById('inv-packing-no').value,
+    po_no:         document.getElementById('inv-po-no').value,
+    po_date:       document.getElementById('inv-po-date').value,
     customer: selectedCustomer || { name: 'Walk-in Customer', billing_address: '' },
     items: lineItems,
     subtotal:  totals.subtotal,

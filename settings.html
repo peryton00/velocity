@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Settings | Alpha Vector IMS</title>
+  <title>Settings | VELOCITY CYCLES IMS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{'brand-dark':'#005900','brand-fir':'#059100','brand-kiwi':'#F0F592','brand-frost':'#A8C084','brand-green':'#4A9062', 'on-surface':'#1a1c19', 'on-surface-variant':'#40493c', 'surface-lowest':'#ffffff', 'surface-low':'#f4f4ee'}}}}</script>
   <style>
@@ -170,17 +170,29 @@
 
         <!-- Legal Details -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">Company Name</label>
+            <input type="text" id="settings-company-name" class="form-input w-full" value="VELOCITY CYCLES INDIA PVT. LTD." placeholder="Enter company name">
+          </div>
           <div>
             <label class="block text-sm font-semibold mb-2" style="color:#40493c">GSTIN</label>
-            <input type="text" class="form-input w-full" value="27AADCB2230M1Z2" placeholder="Ex: 22AAAAA0000A1Z5">
+            <input type="text" id="settings-gstin" class="form-input w-full" value="27AADCB2230M1Z2" placeholder="Ex: 22AAAAA0000A1Z5">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2" style="color:#40493c">PAN</label>
-            <input type="text" class="form-input w-full" value="AADCB2230M" placeholder="Ex: ABCDE1234F">
+            <input type="text" id="settings-pan" class="form-input w-full" value="AADCB2230M" placeholder="Ex: ABCDE1234F">
           </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-semibold mb-2" style="color:#40493c">Registered Address</label>
-            <textarea class="form-input w-full" rows="3">123 Green Valley Estate, Phase 4, Bangalore, 560001</textarea>
+            <textarea id="settings-address" class="form-input w-full" rows="3">123 Green Valley Estate, Phase 4, Bangalore, 560001</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">Phone Number</label>
+            <input type="text" id="settings-phone" class="form-input w-full" value="+91 79 2630 0000" placeholder="Contact number">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2" style="color:#40493c">Email Address</label>
+            <input type="email" id="settings-email" class="form-input w-full" value="billing@velocitycycles.in" placeholder="Billing email">
           </div>
         </div>
 
@@ -192,19 +204,19 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Account Name</label>
-              <input type="text" class="form-input w-full" value="Alpha Vector Pvt Ltd">
+              <input type="text" id="settings-bank-acc-name" class="form-input w-full" value="VELOCITY CYCLES Pvt Ltd">
             </div>
             <div>
               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Bank Name</label>
-              <input type="text" class="form-input w-full" value="HDFC Bank">
+              <input type="text" id="settings-bank-name" class="form-input w-full" value="HDFC Bank">
             </div>
             <div>
               <label class="block text-sm font-semibold mb-2" style="color:#40493c">Account Number</label>
-              <input type="text" class="form-input w-full" value="50200012344567">
+              <input type="text" id="settings-bank-acc-no" class="form-input w-full" value="50200012344567">
             </div>
             <div>
               <label class="block text-sm font-semibold mb-2" style="color:#40493c">IFSC Code</label>
-              <input type="text" class="form-input w-full" value="HDFC0001234">
+              <input type="text" id="settings-bank-ifsc" class="form-input w-full" value="HDFC0001234">
             </div>
           </div>
         </div>
@@ -382,6 +394,19 @@
 
   // Global save mock
   window.saveSettings = function() {
+    const companySettings = {
+      name: document.getElementById('settings-company-name').value,
+      gstin: document.getElementById('settings-gstin').value,
+      pan: document.getElementById('settings-pan').value,
+      address: document.getElementById('settings-address').value,
+      phone: document.getElementById('settings-phone').value,
+      email: document.getElementById('settings-email').value,
+      bank_acc_name: document.getElementById('settings-bank-acc-name').value,
+      bank_name: document.getElementById('settings-bank-name').value,
+      account_no: document.getElementById('settings-bank-acc-no').value,
+      ifsc: document.getElementById('settings-bank-ifsc').value
+    };
+    localStorage.setItem('company_settings', JSON.stringify(companySettings));
     showToast('Settings saved successfully!', 'success');
   }
 
@@ -487,7 +512,26 @@
     }
   };
 
+  // Load settings from localStorage if they exist
+  function loadLocalSettings() {
+    const saved = localStorage.getItem('company_settings');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.name) document.getElementById('settings-company-name').value = data.name;
+      if (data.gstin) document.getElementById('settings-gstin').value = data.gstin;
+      if (data.pan) document.getElementById('settings-pan').value = data.pan;
+      if (data.address) document.getElementById('settings-address').value = data.address;
+      if (data.phone) document.getElementById('settings-phone').value = data.phone;
+      if (data.email) document.getElementById('settings-email').value = data.email;
+      if (data.bank_acc_name) document.getElementById('settings-bank-acc-name').value = data.bank_acc_name;
+      if (data.bank_name) document.getElementById('settings-bank-name').value = data.bank_name;
+      if (data.account_no) document.getElementById('settings-bank-acc-no').value = data.account_no;
+      if (data.ifsc) document.getElementById('settings-bank-ifsc').value = data.ifsc;
+    }
+  }
+
   checkSession().then(() => {
+    loadLocalSettings();
     // Attempt initial load just in case users load on entry
     loadUsers();
     

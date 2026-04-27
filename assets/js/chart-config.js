@@ -1,6 +1,6 @@
 /**
  * CHART CONFIGURATIONS
- * Alpha Vector Inventory Management System
+ * VELOCITY CYCLES Inventory Management System
  * Green-themed charts using Chart.js
  */
 

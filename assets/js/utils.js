@@ -1,6 +1,6 @@
 /**
  * SHARED UTILITIES
- * Alpha Vector Inventory Management System
+ * VELOCITY CYCLES Inventory Management System
  */
 import { checkSession, logout } from './auth.js';
 
@@ -223,7 +223,7 @@ export function getSidebarHTML(active = '', basePath = './') {
 
   return `
     <div class="logo-area">
-      <h1>🌿 Alpha Vector</h1>
+      <h1>🌿 VELOCITY CYCLES</h1>
       <p>Inventory Management</p>
     </div>
     <div class="section-label">MAIN MENU</div>
@@ -236,7 +236,7 @@ export function getSidebarHTML(active = '', basePath = './') {
       `).join('')}
     </nav>
     <div class="sidebar-footer">
-      <div>Alpha Vector IMS v1.0</div>
+      <div>VELOCITY CYCLES IMS v1.0</div>
       <div style="margin-top:4px">© ${new Date().getFullYear()} All rights reserved</div>
     </div>
   `;

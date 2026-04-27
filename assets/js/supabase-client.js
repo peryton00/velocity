@@ -1,6 +1,6 @@
 /**
  * SUPABASE CLIENT
- * Alpha Vector Inventory Management System
+ * VELOCITY CYCLES Inventory Management System
  * Replace YOUR_SUPABASE_URL and YOUR_ANON_KEY with your actual Supabase credentials
  */
 
